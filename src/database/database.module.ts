@@ -6,17 +6,23 @@ import { ConfigService } from '@nestjs/config';
   imports: [
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('database.host'),
-        port: config.get<number>('database.port'),
-        username: config.get<string>('database.user'),
-        password: config.get<string>('database.password'),
-        database: config.get<string>('database.name'),
-        autoLoadEntities: true,
-        synchronize: config.get<boolean>('database.synchronize'),
-        ssl: config.get<boolean>('database.ssl') ? { rejectUnauthorized: false } : false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const url = config.get<string>('database.url');
+        const sslEnabled = config.get<boolean>('database.ssl');
+
+        return {
+          type: 'postgres',
+          url: url || undefined,
+          host: url ? undefined : config.get<string>('database.host'),
+          port: url ? undefined : config.get<number>('database.port'),
+          username: url ? undefined : config.get<string>('database.user'),
+          password: url ? undefined : config.get<string>('database.password'),
+          database: url ? undefined : config.get<string>('database.name'),
+          autoLoadEntities: true,
+          synchronize: config.get<boolean>('database.synchronize'),
+          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+        };
+      },
     }),
   ],
 })

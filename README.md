@@ -38,6 +38,7 @@ Swagger UI is available at `/api/docs`.
 
 - `NODE_ENV`
 - `PORT`
+- `DATABASE_URL` (recommended for Neon; when set, DB_* values are ignored)
 - `DB_HOST`
 - `DB_PORT`
 - `DB_USER`
