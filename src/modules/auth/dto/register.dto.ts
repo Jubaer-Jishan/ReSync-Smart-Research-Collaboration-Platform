@@ -1,33 +1,49 @@
-import { Type } from 'class-transformer';
 import {
   IsEmail,
-  IsOptional,
+  IsNotEmpty,
   IsString,
-  MaxLength,
   MinLength,
-  ValidateNested,
+  IsEnum,
+  Matches,
 } from 'class-validator';
-import { CreateUserProfileDto } from '../../users/dto/create-user-profile.dto';
+
+import { Role } from '../../users/enums/role.enum';
+import { Department } from '../../users/enums/department.enum';
 
 export class RegisterDto {
+
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  username!: string;
+
   @IsEmail()
-  email: string;
+  email!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  institution!: string;
+
+  @IsEnum(Department)
+  department!: Department;
+
+  @IsString()
+  @Matches(/^01\d{9}$/, {
+    message: 'Phone number must be a valid Bangladeshi number',
+  })
+  phoneNumber!: string;
+
+  @IsEnum(Role)
+  role!: Role;
 
   @IsString()
   @MinLength(8)
-  @MaxLength(128)
-  password: string;
+  password!: string;
 
   @IsString()
-  @MaxLength(80)
-  firstName: string;
-
-  @IsString()
-  @MaxLength(80)
-  lastName: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => CreateUserProfileDto)
-  profile?: CreateUserProfileDto;
+  @MinLength(8)
+  confirmPassword!: string;
 }

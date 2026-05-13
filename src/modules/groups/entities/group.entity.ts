@@ -1,6 +1,7 @@
-import { Entity,Column } from "typeorm";
-import { BaseEntity } from "./base.entity";
+import { Entity,Column,ManyToMany, JoinTable } from "typeorm";
+import { BaseEntity } from "../../../common/entities/base.entity";
 import { VisibilityType } from "src/modules/users/enums/visibility-type.enum";
+import { User } from "src/modules/users/entities/user.entity";
 
 @Entity('groups')
 export class Group extends BaseEntity {
@@ -28,4 +29,10 @@ export class Group extends BaseEntity {
 
     @Column({ nullable: true })
     institution?: string;
+
+    //Relation with User
+
+    @ManyToMany(() => User, (user) => user.groups)
+    @JoinTable()
+    members?: User[];
 }
