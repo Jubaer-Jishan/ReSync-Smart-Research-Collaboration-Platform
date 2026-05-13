@@ -1,5 +1,6 @@
-import { Entity, Column} from "typeorm";
+import { Entity, Column, OneToOne, JoinColumn} from "typeorm";
 import { BaseEntity } from "./base.entity";
+import { User } from "./user.entity";
 
 @Entity('student_profiles')
 export class StudentProfile extends BaseEntity {
@@ -26,4 +27,9 @@ export class StudentProfile extends BaseEntity {
 
     @Column({ nullable: true, type: 'text' })
     interestedResearchFields?: string;
+
+    @OneToOne(() => User)
+    @JoinColumn()
+    user!: User;
+
 }
