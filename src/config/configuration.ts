@@ -18,8 +18,15 @@ export default () => {
     synchronize: process.env.DB_SYNCHRONIZE === 'true',
   },
   auth: {
-    jwtSecret: process.env.JWT_SECRET ?? 'change-me',
+    jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
+  },
+  redis: {
+    url: process.env.REDIS_URL,
+  },
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    resendFrom: process.env.RESEND_FROM_EMAIL,
   },
   };
 };

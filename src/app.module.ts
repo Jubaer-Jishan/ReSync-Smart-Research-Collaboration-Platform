@@ -3,8 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import configuration from './config/configuration';
 import { validationSchema } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
-import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+
+
 
 @Module({
   imports: [
@@ -15,7 +19,9 @@ import { UsersModule } from './modules/users/users.module';
     }),
     DatabaseModule,
     UsersModule,
+    GroupsModule,
     AuthModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}

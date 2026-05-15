@@ -1,51 +1,146 @@
-import { Exclude } from 'class-transformer';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { Role } from '../enums/role.enum';
-import { UserProfile } from './user-profile.entity';
+import { Entity,Column,Index,OneToOne,ManyToMany, JoinColumn, OneToMany} from "typeorm";
+import { BaseEntity } from "../../../common/entities/base.entity";
+import {Role} from "../enums/role.enum";
+import { Department } from "../enums/department.enum";
+import { StudentProfile } from "./student-profile.entity";
+import { TeacherProfile } from "./teacher-profile.entity";
+import { Group } from "../../groups/entities/group.entity";
+import { ProjectMember } from "../../projects/entities/project-member.entity";
 
-@Entity({ name: 'users' })
-export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
 
-  @Column({ unique: true })
-  email: string;
+@Entity('users')
+export class User extends BaseEntity {
+    @Column()
+    name!: string;
 
-  @Column()
-  @Exclude()
-  password: string;
+    @Column()
+    username!: string;
 
-  @Column({ type: 'varchar', length: 80 })
-  firstName: string;
+    @Column({ unique: true })
+    @Index()
+    email!: string;
 
-  @Column({ type: 'varchar', length: 80 })
-  lastName: string;
 
-  @Column({ type: 'enum', enum: Role, default: Role.RESEARCHER })
-  role: Role;
 
-  @Column({ default: true })
-  isActive: boolean;
+    @Column()
+    password!: string;
 
-  @OneToOne(() => UserProfile, (profile) => profile.user, {
-    cascade: true,
-    eager: true,
-    nullable: true,
-  })
-  @JoinColumn()
-  profile?: UserProfile;
+    @Column({
+        type: 'enum',
+        enum: Role,
+        default: Role.RESEARCHER,
+    })
+    role!: Role;
 
-  @CreateDateColumn()
-  createdAt: Date;
+    //Profile Information
 
-  @UpdateDateColumn()
-  updatedAt: Date;
+    @Column({ nullable: true, type: 'text' })
+        bio?: string;
+    
+    @Column({ nullable: true })
+        profilePictureUrl?: string;
+
+    @Column({ nullable: true })
+    bannerImage?: string;
+
+    @Column({ nullable: true })
+    location?: string;
+
+    @Column({ nullable: true })
+    website?: string;
+
+    @Column({ nullable: true })
+    contactNumber?: string;
+
+    @Column({ nullable: true })
+    institution?: string;
+
+    @Column({
+      type: 'enum',
+      enum: Department,
+      nullable: true,
+    })
+    department?: Department;
+
+    @Column({ nullable: true })
+    phoneNumber?: string;
+
+    // Social Links
+    @Column({ nullable: true })
+    githubProfile?: string;
+
+    @Column({ nullable: true })
+    linkedinProfile?: string;
+
+    @Column({ nullable: true })
+    twitterProfile?: string;
+
+    @Column({ nullable: true })
+    facebookProfile?: string;
+
+    @Column({ nullable: true })
+    orcidProfile?: string;
+
+    @Column({ nullable: true })
+    googleScholarProfile?: string;
+
+    @Column({ nullable: true })
+    researchGateProfile?: string;
+
+
+    // Verification & Status
+    @Column({ default: false })
+    isEmailVerified!: boolean;
+
+    @Column({ default: true })
+    isActive!: boolean;
+
+    @Column({ default: false })
+    isProfileComplete!: boolean;
+
+    // Auth Related
+    @Column({ nullable: true, type: 'text' })
+    refreshToken?: string;
+
+    @Column({ nullable: true })
+    lastLoginAt?: Date;
+
+    @Column({ nullable: true })
+    passwordChangedAt?: Date;
+
+    // Platform Stats
+    @Column({ default: 0 })
+    reputationPoints!: number;
+
+    @Column({ default: 0 })
+    followerCount!: number;
+
+    @Column({ default: 0 })
+    followingCount!: number;
+
+    @Column({ default: 0 })
+    totalPosts!: number;
+
+    // Relationships
+
+    @OneToOne(
+      () => StudentProfile,
+      (studentProfile) => studentProfile.user,
+      { cascade: true },
+    )
+    studentProfile?: StudentProfile;
+
+    @OneToOne(
+      () => TeacherProfile,
+      (teacherProfile) => teacherProfile.user,
+      { cascade: true }
+    )
+    teacherProfile?: TeacherProfile;
+
+    @ManyToMany(() => Group, (group) => group.members)
+    groups?: Group[];
+
+    @OneToMany(() => ProjectMember, (member) => member.user)
+    projectMemberships?: ProjectMember[];
+
 }
