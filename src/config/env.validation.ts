@@ -14,4 +14,7 @@ export const validationSchema = Joi.object({
   DB_SYNCHRONIZE: Joi.boolean().truthy('true').falsy('false').default(false),
   JWT_SECRET: Joi.string().min(12).required(),
   JWT_EXPIRES_IN: Joi.string().default('1d'),
+  REDIS_URL: Joi.string().uri().required(),
+  RESEND_API_KEY: Joi.string().min(10).required(),
+  RESEND_FROM_EMAIL: Joi.string().email().required(),
 });
