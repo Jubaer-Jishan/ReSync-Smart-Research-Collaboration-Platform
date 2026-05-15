@@ -1,10 +1,11 @@
-import { Entity,Column,Index,OneToOne,ManyToMany, JoinColumn} from "typeorm";
+import { Entity,Column,Index,OneToOne,ManyToMany, JoinColumn, OneToMany} from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
 import {Role} from "../enums/role.enum";
 import { Department } from "../enums/department.enum";
 import { StudentProfile } from "./student-profile.entity";
 import { TeacherProfile } from "./teacher-profile.entity";
 import { Group } from "../../groups/entities/group.entity";
+import { ProjectMember } from "../../projects/entities/project-member.entity";
 
 
 @Entity('users')
@@ -138,5 +139,8 @@ export class User extends BaseEntity {
 
     @ManyToMany(() => Group, (group) => group.members)
     groups?: Group[];
+
+    @OneToMany(() => ProjectMember, (member) => member.user)
+    projectMemberships?: ProjectMember[];
 
 }

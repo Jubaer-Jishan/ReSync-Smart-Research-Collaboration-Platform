@@ -60,4 +60,11 @@ export class UsersService {
         where: { email }
     });
   }
+
+  // find user by id
+  async findById(id: string): Promise<User | null> {
+    return await this.usersRepository.findOne({
+      where: { id },
+    });
+  }
 }

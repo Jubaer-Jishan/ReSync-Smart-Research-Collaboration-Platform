@@ -18,7 +18,7 @@ export default () => {
     synchronize: process.env.DB_SYNCHRONIZE === 'true',
   },
   auth: {
-    jwtSecret: process.env.JWT_SECRET ?? 'change-me',
+    jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
   },
   };

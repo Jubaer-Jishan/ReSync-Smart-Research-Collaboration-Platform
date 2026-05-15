@@ -1,0 +1,8 @@
+export enum ProjectRole {
+  OWNER = 'OWNER',
+  SUPERVISOR = 'SUPERVISOR',
+  AUTHOR = 'AUTHOR',
+  CO_AUTHOR = 'CO_AUTHOR',
+  CONTRIBUTOR = 'CONTRIBUTOR',
+  VIEWER = 'VIEWER',
+}

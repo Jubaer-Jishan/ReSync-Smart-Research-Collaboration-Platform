@@ -24,6 +24,10 @@ export class AuthService {
             throw new UnauthorizedException("Invalid credentials");
         }
 
+        if (!user.isEmailVerified) {
+            throw new UnauthorizedException("Email is not verified");
+        }
+
         // compare password with hashed password in database
         const isPasswordValid = await bcrypt.compare(
             password,
