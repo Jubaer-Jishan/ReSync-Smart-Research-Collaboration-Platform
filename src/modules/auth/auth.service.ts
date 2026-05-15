@@ -67,6 +67,10 @@ export class AuthService {
         };
     }
 
+    async logout() {
+        return { success: true };
+    }
+
     private sanitizeUser(user: User) {
         const { password, refreshToken, ...safeUser } = user;
         return safeUser;

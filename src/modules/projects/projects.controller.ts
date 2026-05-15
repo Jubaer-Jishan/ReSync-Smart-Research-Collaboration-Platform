@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { AddProjectMemberDto } from './dto/add-project-member.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('bearer')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
