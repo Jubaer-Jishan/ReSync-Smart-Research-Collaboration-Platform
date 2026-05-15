@@ -1,7 +1,7 @@
 import { Entity,Column,ManyToMany, JoinTable } from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
-import { VisibilityType } from "src/modules/users/enums/visibility-type.enum";
-import { User } from "src/modules/users/entities/user.entity";
+import { VisibilityType } from "../../users/enums/visibility-type.enum"
+import { User } from "../../users/entities/user.entity";
 
 @Entity('groups')
 export class Group extends BaseEntity {
