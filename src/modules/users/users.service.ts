@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "./entities/user.entity";
@@ -21,19 +21,19 @@ export class UsersService {
     } = registerDto;
 
     if (password !== confirmPassword) {
-        throw new Error("Passwords do not match");
+      throw new BadRequestException("Passwords do not match");
     }
 
     // Check if the email is already registered
 
     const existingUser = await this.usersRepository.findOne({ where: { email } });
     if (existingUser) {
-        throw new Error("Email is already registered");
+      throw new ConflictException("Email is already registered");
     }
 
     const existingUsername = await this.usersRepository.findOne({ where: { username } });
     if (existingUsername) {
-        throw new Error("Username is already taken");
+      throw new ConflictException("Username is already taken");
     }
 
     const hashedPassword = await bcrypt.hash(

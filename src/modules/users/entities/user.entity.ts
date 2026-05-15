@@ -1,6 +1,7 @@
 import { Entity,Column,Index,OneToOne,ManyToMany, JoinColumn} from "typeorm";
 import { BaseEntity } from "../../../common/entities/base.entity";
 import {Role} from "../enums/role.enum";
+import { Department } from "../enums/department.enum";
 import { StudentProfile } from "./student-profile.entity";
 import { TeacherProfile } from "./teacher-profile.entity";
 import { Group } from "../../groups/entities/group.entity";
@@ -49,6 +50,19 @@ export class User extends BaseEntity {
 
     @Column({ nullable: true })
     contactNumber?: string;
+
+    @Column({ nullable: true })
+    institution?: string;
+
+    @Column({
+      type: 'enum',
+      enum: Department,
+      nullable: true,
+    })
+    department?: Department;
+
+    @Column({ nullable: true })
+    phoneNumber?: string;
 
     // Social Links
     @Column({ nullable: true })
