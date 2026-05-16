@@ -13,9 +13,6 @@ export class StudentProfile extends BaseEntity {
     @Column()
     semester!: string;
 
-    @Column({ nullable: true })
-    studentId?: string;
-
     @Column({ nullable: true, type: 'float' })
     cgpa?: number;
 
