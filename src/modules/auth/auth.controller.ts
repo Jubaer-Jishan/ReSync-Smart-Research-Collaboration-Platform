@@ -1,5 +1,6 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AuthService } from "./auth.service";
 import { EmailOtpService } from "./email-otp.service";
 import { ConfirmEmailOtpDto } from "./dto/confirm-email-otp.dto";
@@ -31,8 +32,8 @@ export class AuthController {
 	@Post('logout')
 	@UseGuards(JwtAuthGuard)
 	@ApiBearerAuth('bearer')
-	async logout() {
-		return this.authService.logout();
+	async logout(@Req() req: Request) {
+		return this.authService.logout(req);
 	}
 
 	@Post("verify-email/request")
