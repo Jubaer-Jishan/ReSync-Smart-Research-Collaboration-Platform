@@ -163,25 +163,335 @@ export class EmailOtpService {
     return createHash('sha256').update(otp).digest('hex');
   }
 
+
   private buildEmailHtml(otp: string): string {
     return `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>Verify your email</h2>
-        <p>Your OTP code is:</p>
-        <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${otp}</p>
-        <p>This code expires in 5 minutes.</p>
+    <div style="
+      margin:0;
+      padding:40px 20px;
+      background:#f4f7fb;
+      font-family:Arial,sans-serif;
+    ">
+
+      <div style="
+        max-width:600px;
+        margin:auto;
+        background:#ffffff;
+        border-radius:20px;
+        overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,0.08);
+      ">
+
+        <div style="
+          background:linear-gradient(135deg,#4F46E5,#7C3AED);
+          padding:40px;
+          text-align:center;
+          color:white;
+        ">
+          <h1 style="margin:0;font-size:28px;">
+            Verify Your Email
+          </h1>
+
+          <p style="
+            margin-top:10px;
+            opacity:.9;
+            font-size:15px;
+          ">
+            Welcome to ReSync. Verify your email to continue.
+          </p>
+        </div>
+
+        <div style="padding:40px;text-align:center;">
+
+          <p style="
+            margin-bottom:25px;
+            color:#555;
+            font-size:16px;
+          ">
+            Use the verification code below:
+          </p>
+
+          <div style="
+            display:inline-block;
+            background:#f8f9ff;
+            border:2px dashed #6366F1;
+            padding:18px 35px;
+            border-radius:14px;
+            margin-bottom:25px;
+          ">
+            <span style="
+              font-size:32px;
+              font-weight:bold;
+              letter-spacing:8px;
+              color:#4F46E5;
+            ">
+              ${otp}
+            </span>
+          </div>
+
+          <p style="
+            color:#666;
+            font-size:14px;
+          ">
+            This code expires in <strong>5 minutes</strong>.
+          </p>
+
+          <div style="
+            margin-top:35px;
+            text-align:left;
+            background:#f8fafc;
+            border-radius:12px;
+            padding:20px;
+            border:1px solid #e5e7eb;
+          ">
+
+            <h3 style="
+              margin-top:0;
+              margin-bottom:15px;
+              color:#111827;
+              font-size:15px;
+            ">
+              Security Information
+            </h3>
+
+            <ul style="
+              padding-left:18px;
+              color:#6b7280;
+              font-size:13px;
+              line-height:1.8;
+              margin:0;
+            ">
+              <li>Never share your OTP or verification code with anyone.</li>
+
+              <li>
+                ReSync staff will never ask for your password or OTP.
+              </li>
+
+              <li>
+                This verification code is valid for only 5 minutes.
+              </li>
+
+              <li>
+                If you didn't request this email, ignore it and secure your account.
+              </li>
+
+              <li>
+                This is an automated message. Please do not reply.
+              </li>
+
+              <li>
+                ReSync is a smart research collaboration platform connecting researchers and innovators.
+              </li>
+
+            </ul>
+
+          </div>
+
+        </div>
+
+        <div style="
+          padding:25px;
+          text-align:center;
+          background:#fafafa;
+          border-top:1px solid #eee;
+        ">
+
+          <p style="
+            margin:0;
+            font-size:13px;
+            color:#6b7280;
+            font-weight:bold;
+          ">
+            ReSync — Smart Research Collaboration Platform
+          </p>
+
+          <p style="
+            margin-top:8px;
+            font-size:12px;
+            color:#9ca3af;
+          ">
+            Securely connecting researchers, collaborators, and ideas.
+          </p>
+
+          <p style="
+            margin-top:16px;
+            font-size:11px;
+            color:#9ca3af;
+          ">
+            © ${new Date().getFullYear()} ReSync. All rights reserved.
+          </p>
+
+        </div>
+
       </div>
+
+    </div>
     `;
   }
 
+
   private buildPasswordResetHtml(otp: string): string {
     return `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>Reset your password</h2>
-        <p>Your OTP code is:</p>
-        <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${otp}</p>
-        <p>This code expires in 5 minutes.</p>
+    <div style="
+      margin:0;
+      padding:40px 20px;
+      background:#f4f7fb;
+      font-family:Arial,sans-serif;
+    ">
+
+      <div style="
+        max-width:600px;
+        margin:auto;
+        background:#ffffff;
+        border-radius:20px;
+        overflow:hidden;
+        box-shadow:0 10px 30px rgba(0,0,0,0.08);
+      ">
+
+        <div style="
+          background:linear-gradient(135deg,#DC2626,#EF4444);
+          padding:40px;
+          text-align:center;
+          color:white;
+        ">
+          <h1 style="margin:0;font-size:28px;">
+            Password Reset Request
+          </h1>
+
+          <p style="
+            margin-top:10px;
+            opacity:.9;
+            font-size:15px;
+          ">
+            We received a request to reset your password.
+          </p>
+        </div>
+
+        <div style="padding:40px;text-align:center;">
+
+          <p style="
+            margin-bottom:25px;
+            color:#555;
+            font-size:16px;
+          ">
+            Use the OTP below to continue:
+          </p>
+
+          <div style="
+            display:inline-block;
+            background:#fff5f5;
+            border:2px dashed #EF4444;
+            padding:18px 35px;
+            border-radius:14px;
+            margin-bottom:25px;
+          ">
+            <span style="
+              font-size:32px;
+              font-weight:bold;
+              letter-spacing:8px;
+              color:#DC2626;
+            ">
+              ${otp}
+            </span>
+          </div>
+
+          <p style="
+            color:#666;
+            font-size:14px;
+          ">
+            This code expires in <strong>5 minutes</strong>.
+          </p>
+
+          <div style="
+            margin-top:35px;
+            text-align:left;
+            background:#f8fafc;
+            border-radius:12px;
+            padding:20px;
+            border:1px solid #e5e7eb;
+          ">
+
+            <h3 style="
+              margin-top:0;
+              margin-bottom:15px;
+              color:#111827;
+              font-size:15px;
+            ">
+              Security Information
+            </h3>
+
+            <ul style="
+              padding-left:18px;
+              color:#6b7280;
+              font-size:13px;
+              line-height:1.8;
+              margin:0;
+            ">
+              <li>Never share your OTP with anyone.</li>
+
+              <li>
+                ReSync staff will never ask for your password or OTP.
+              </li>
+
+              <li>
+                If you didn't request a password reset, ignore this email.
+              </li>
+
+              <li>
+                Consider changing your password if you suspect unauthorized activity.
+              </li>
+
+              <li>
+                This is an automated email. Please do not reply.
+              </li>
+
+              <li>
+                ReSync is a smart research collaboration platform connecting researchers and innovators.
+              </li>
+
+            </ul>
+
+          </div>
+
+        </div>
+
+        <div style="
+          padding:25px;
+          text-align:center;
+          background:#fafafa;
+          border-top:1px solid #eee;
+        ">
+
+          <p style="
+            margin:0;
+            font-size:13px;
+            color:#6b7280;
+            font-weight:bold;
+          ">
+            ReSync — Smart Research Collaboration Platform
+          </p>
+
+          <p style="
+            margin-top:8px;
+            font-size:12px;
+            color:#9ca3af;
+          ">
+            Securely connecting researchers, collaborators, and ideas.
+          </p>
+
+          <p style="
+            margin-top:16px;
+            font-size:11px;
+            color:#9ca3af;
+          ">
+            © ${new Date().getFullYear()} ReSync. All rights reserved.
+          </p>
+
+        </div>
+
       </div>
+
+    </div>
     `;
   }
 }
