@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+@import "react-phone-number-input/style.css";
+
+.PhoneInputInput {
+  outline: none;
+  width: 100%;
+  background: transparent;
+  color: #0f172a;
+}
+
+.PhoneInputCountrySelect {
+  background: transparent;
+  outline: none;
+}
+@import "react-international-phone/style.css";
+.react-international-phone-input-container {
+  width: 100%;
+}
+
+.react-international-phone-input {
+  width: 100%;
+  border: none !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-international-phone-country-selector-button {
+  border: none !important;
+  background: transparent !important;
+}

@@ -1,0 +1,125 @@
+"use client";
+
+import {
+  motion,
+  AnimatePresence,
+} from "framer-motion";
+
+import { useState } from "react";
+
+import LoginForm from "./LoginForm";
+import RegisterForm from "./RegisterForm";
+
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function AuthModal({
+  isOpen,
+  onClose,
+}: AuthModalProps) {
+
+  const [isLogin, setIsLogin] =
+    useState(true);
+
+  return (
+
+    <AnimatePresence>
+
+      {isOpen && (
+
+        <motion.div
+          initial={{
+            opacity: 0,
+          }}
+          animate={{
+            opacity: 1,
+          }}
+          exit={{
+            opacity: 0,
+          }}
+          className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto bg-black/50 px-4 pt-6 backdrop-blur-md"
+        >
+
+          {/* Modal Box */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.9,
+              y: 40,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0,
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.9,
+              y: 40,
+            }}
+            transition={{
+              duration: 0.3,
+            }}
+            className="relative w-full max-w-2xl rounded-[32px] bg-white p-6 shadow-[0_20px_80px_rgba(15,23,42,0.25)]"
+          >
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute right-5 top-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 transition-all duration-300 hover:bg-red-500 hover:text-white"
+            >
+              ✕
+            </button>
+
+            {/* Toggle Buttons */}
+            <div className="mb-6 flex rounded-2xl bg-slate-100 p-2">
+
+              <button
+                onClick={() =>
+                  setIsLogin(true)
+                }
+                className={`flex-1 rounded-xl px-6 py-3 text-lg font-bold transition-all duration-300 ${
+                  isLogin
+                    ? "bg-white text-cyan-600 shadow-md"
+                    : "text-slate-500"
+                }`}
+              >
+                Sign In
+              </button>
+
+              <button
+                onClick={() =>
+                  setIsLogin(false)
+                }
+                className={`flex-1 rounded-xl px-6 py-3 text-lg font-bold transition-all duration-300 ${
+                  !isLogin
+                    ? "bg-white text-cyan-600 shadow-md"
+                    : "text-slate-500"
+                }`}
+              >
+                Sign Up
+              </button>
+
+            </div>
+
+            {/* Form Area */}
+            <div className="max-h-[80vh] overflow-y-auto pr-2">
+
+              {isLogin ? (
+                <LoginForm />
+              ) : (
+                <RegisterForm />
+              )}
+
+            </div>
+
+          </motion.div>
+
+        </motion.div>
+      )}
+
+    </AnimatePresence>
+  );
+}
