@@ -6,6 +6,7 @@ import { StudentProfile } from "./student-profile.entity";
 import { TeacherProfile } from "./teacher-profile.entity";
 import { Group } from "../../groups/entities/group.entity";
 import { ProjectMember } from "../../projects/entities/project-member.entity";
+import { ResearchPostApplication } from "../../applications/entities/research-post-application.entity";
 
 
 @Entity('users')
@@ -142,5 +143,8 @@ export class User extends BaseEntity {
 
     @OneToMany(() => ProjectMember, (member) => member.user)
     projectMemberships?: ProjectMember[];
+
+    @OneToMany(() => ResearchPostApplication, (application) => application.user)
+    researchPostApplications?: ResearchPostApplication[];
 
 }

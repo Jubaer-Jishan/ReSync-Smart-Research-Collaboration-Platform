@@ -17,4 +17,13 @@ export const validationSchema = Joi.object({
   REDIS_URL: Joi.string().uri().required(),
   RESEND_API_KEY: Joi.string().min(10).required(),
   RESEND_FROM_EMAIL: Joi.string().email().required(),
+  STORAGE_PROVIDER: Joi.string().valid('r2', 's3', 'azure').default('r2'),
+  STORAGE_ENDPOINT: Joi.string().uri().required(),
+  STORAGE_REGION: Joi.string().default('auto'),
+  STORAGE_ACCESS_KEY_ID: Joi.string().required(),
+  STORAGE_SECRET_ACCESS_KEY: Joi.string().required(),
+  STORAGE_BUCKET: Joi.string().required(),
+  STORAGE_PUBLIC_URL: Joi.string().uri().required(),
+  STORAGE_PRESIGN_EXPIRES_IN: Joi.number().default(900),
+  STORAGE_FORCE_PATH_STYLE: Joi.boolean().truthy('true').falsy('false').default(true),
 });
