@@ -16,6 +16,7 @@ import { ResearchDomain } from '../enums/research-domain.enum';
 import { ResearchStage } from '../enums/research-stage.enum';
 import { PostMedia } from './post-media.entity';
 import { PostResearchInterest } from './post-research-interest.entity';
+import { ResearchPostApplication } from '../../applications/entities/research-post-application.entity';
 
 @Entity('research_posts')
 @Index(['status', 'deadline'])
@@ -55,6 +56,9 @@ export class ResearchPost extends BaseEntity {
 
   @Column({ type: 'int' })
   requiredCollaborators!: number;
+
+  @Column({ type: 'int', default: 0 })
+  acceptedCount!: number;
 
   @Column({
     type: 'enum',
@@ -106,4 +110,10 @@ export class ResearchPost extends BaseEntity {
     { cascade: true },
   )
   interests?: PostResearchInterest[];
+
+  @OneToMany(
+    () => ResearchPostApplication,
+    (application) => application.post,
+  )
+  applications?: ResearchPostApplication[];
 }

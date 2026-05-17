@@ -6,6 +6,7 @@ import { PostResearchInterest } from './entities/post-research-interest.entity';
 import { ResearchInterest } from './entities/research-interest.entity';
 import { ResearchPost } from './entities/research-post.entity';
 import { ResearchPostMediaService } from './research-post-media.service';
+import { ResearchPostsController } from './research-posts.controller';
 import { ResearchPostsService } from './research-posts.service';
 
 @Module({
@@ -18,6 +19,7 @@ import { ResearchPostsService } from './research-posts.service';
     ]),
     StorageModule,
   ],
+  controllers: [ResearchPostsController],
   providers: [ResearchPostMediaService, ResearchPostsService],
   exports: [TypeOrmModule, ResearchPostsService],
 })

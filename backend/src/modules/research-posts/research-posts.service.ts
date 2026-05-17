@@ -47,6 +47,7 @@ export class ResearchPostsService {
     dto: CreatePostDto,
     images: CreatePostImageInput[] = [],
   ): Promise<ResearchPost> {
+    // TODO: Add idempotency protection to prevent duplicate posts on retries.
     this.mediaService.validateFileCount(images.length);
 
     const postId = randomUUID();
@@ -253,6 +254,7 @@ export class ResearchPostsService {
       return;
     }
 
+    // TODO: Add scheduled orphan cleanup job for failed deletions.
     await this.deleteStorageKeys(uploads.map((upload) => upload.key));
   }
 
