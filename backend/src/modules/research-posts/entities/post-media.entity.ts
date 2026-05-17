@@ -1,11 +1,5 @@
-import {
-  Column,
-  Entity,
-  Index,
-  ManyToOne,
-} from 'typeorm';
+import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { User } from '../../users/entities/user.entity';
 import { MediaFileType } from '../enums/media-file-type.enum';
 import { ResearchPost } from './research-post.entity';
 
@@ -20,34 +14,13 @@ export class PostMedia extends BaseEntity {
   @Column()
   url!: string;
 
-  @Column({ nullable: true })
-  storageKey?: string;
-
-  @Column({ nullable: true })
-  provider?: string;
+  @Column()
+  storageKey!: string;
 
   @Column({
     type: 'enum',
     enum: MediaFileType,
   })
   @Index()
-  fileType!: MediaFileType;
-
-  @Column({ nullable: true })
-  mimeType?: string;
-
-  @Column({ type: 'bigint', nullable: true })
-  sizeBytes?: number;
-
-  @Column({ nullable: true })
-  originalName?: string;
-
-  @Column({ nullable: true })
-  checksum?: string;
-
-  @Column({ type: 'int', default: 0 })
-  displayOrder!: number;
-
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  uploadedBy?: User;
+  type!: MediaFileType;
 }
