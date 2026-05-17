@@ -5,7 +5,7 @@ import {
   AnimatePresence,
 } from "framer-motion";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -13,15 +13,23 @@ import RegisterForm from "./RegisterForm";
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: "login" | "register";
 }
 
 export default function AuthModal({
   isOpen,
   onClose,
+  initialMode = "login",
 }: AuthModalProps) {
 
   const [isLogin, setIsLogin] =
-    useState(true);
+    useState(initialMode === "login");
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLogin(initialMode === "login");
+    }
+  }, [initialMode, isOpen]);
 
   return (
 

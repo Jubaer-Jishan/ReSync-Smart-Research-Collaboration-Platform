@@ -10,7 +10,7 @@ import {
 } from "framer-motion";
 
 interface NavbarProps {
-  onAuthOpen: () => void;
+  onAuthOpen: (mode: "login" | "register") => void;
 }
 
 export default function Navbar({
@@ -46,7 +46,7 @@ export default function Navbar({
 >
 
   {/* Logo Box */}
-  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-xl font-black text-white shadow-lg shadow-cyan-500/30">
+  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xl font-black text-white shadow-lg shadow-blue-500/20">
 
     R
 
@@ -55,7 +55,7 @@ export default function Navbar({
   {/* Brand Text */}
   <div>
 
-    <h1 className="bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 bg-clip-text text-2xl font-black text-transparent">
+    <h1 className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-2xl font-black text-transparent">
       ReSync
     </h1>
 
@@ -123,16 +123,16 @@ export default function Navbar({
 
           {/* Login */}
           <button
-            onClick={onAuthOpen}
-            className="rounded-xl border border-slate-300 bg-white px-5 py-2 font-medium text-slate-800 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500 hover:shadow-lg"
+            onClick={() => onAuthOpen("login")}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2 font-medium text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500 hover:shadow-lg"
           >
             Login
           </button>
 
           {/* Register */}
           <button
-            onClick={onAuthOpen}
-            className="rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 px-6 py-2 font-bold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:scale-105 hover:shadow-cyan-500/50"
+            onClick={() => onAuthOpen("register")}
+            className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2 font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/30"
           >
             Register
           </button>
@@ -205,9 +205,9 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setOpen(false);
-                    onAuthOpen();
+                    onAuthOpen("login");
                   }}
-                  className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-center font-medium text-slate-800 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-center font-medium text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
                 >
                   Login
                 </button>
@@ -216,9 +216,9 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setOpen(false);
-                    onAuthOpen();
+                    onAuthOpen("register");
                   }}
-                  className="rounded-2xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 px-5 py-3 text-center font-bold text-white shadow-lg shadow-cyan-500/30 transition-all duration-300 hover:scale-[1.02]"
+                  className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-center font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
                 >
                   Register
                 </button>

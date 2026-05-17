@@ -19,8 +19,82 @@ export default function LoginForm() {
     const passwordRef =
   useRef<HTMLInputElement>(null);
 
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
   const [isForgotOpen, setIsForgotOpen] =
     useState(false);
+
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    "http://localhost:3001/api";
+
+  const handleSubmit = async (
+    e: React.FormEvent,
+  ) => {
+    e.preventDefault();
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        },
+      );
+
+      const data =
+        (await response.json()) as {
+          accessToken?: string;
+          message?: string;
+          error?: string;
+          statusCode?: number;
+        };
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ??
+            data.error ??
+            "Login failed",
+        );
+      }
+
+      if (data.accessToken) {
+        localStorage.setItem(
+          "resync_access_token",
+          data.accessToken,
+        );
+      }
+
+      alert("Login successful 😄🔥");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Login failed";
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
 
@@ -34,9 +108,7 @@ export default function LoginForm() {
       {/* Form */}
       <form
   className="space-y-5"
-  onSubmit={(e) =>
-    e.preventDefault()
-  }
+  onSubmit={handleSubmit}
 >
 
         {/* Email */}
@@ -49,6 +121,10 @@ export default function LoginForm() {
           <input
             type="email"
             placeholder="example@gmail.com"
+            value={email}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
             onKeyDown={(e) => {
 
   if (
@@ -82,6 +158,10 @@ export default function LoginForm() {
               }
               placeholder="Enter password"
               ref={passwordRef}
+              value={password}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
 
 onKeyDown={(e) => {
 
@@ -90,10 +170,6 @@ onKeyDown={(e) => {
   ) {
 
     e.preventDefault();
-
-    alert(
-      "Login successful 😄🔥"
-    );
   }
 }}
               className="w-full bg-transparent py-4 text-slate-900 outline-none"
@@ -149,10 +225,19 @@ onKeyDown={(e) => {
         {/* Login Button */}
         <button
           type="submit"
-          className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-[0_10px_40px_rgba(14,165,233,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(14,165,233,0.45)]"
+          disabled={isSubmitting}
+          className="w-full rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-4 text-lg font-bold text-white shadow-[0_10px_40px_rgba(14,165,233,0.35)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(14,165,233,0.45)] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Login
+          {isSubmitting
+            ? "Logging in..."
+            : "Login"}
         </button>
+
+        {errorMessage && (
+          <p className="text-sm font-medium text-red-600">
+            {errorMessage}
+          </p>
+        )}
 
       </form>
 

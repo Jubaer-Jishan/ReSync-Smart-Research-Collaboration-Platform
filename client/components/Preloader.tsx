@@ -61,13 +61,13 @@ export default function Preloader({
       exit={{
         opacity: 0,
       }}
-      className="fixed left-0 top-0 z-[99999] flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-slate-950"
+      className="fixed left-0 top-0 z-[99999] flex h-screen w-screen flex-col items-center justify-center overflow-hidden bg-slate-50"
     >
 
       {/* Glow */}
-      <div className="absolute left-[-120px] top-[-100px] h-[300px] w-[300px] rounded-full bg-cyan-500/20 blur-3xl"></div>
+      <div className="absolute left-[-120px] top-[-100px] h-[300px] w-[300px] rounded-full bg-cyan-200/40 blur-3xl"></div>
 
-      <div className="absolute bottom-[-120px] right-[-100px] h-[300px] w-[300px] rounded-full bg-blue-500/20 blur-3xl"></div>
+      <div className="absolute bottom-[-120px] right-[-100px] h-[300px] w-[300px] rounded-full bg-blue-200/40 blur-3xl"></div>
 
       {/* Logo */}
       <motion.div
@@ -82,7 +82,7 @@ export default function Preloader({
         transition={{
           duration: 0.6,
         }}
-        className="relative z-10 mb-8 flex h-28 w-28 items-center justify-center rounded-[32px] bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-5xl font-black text-white shadow-[0_20px_80px_rgba(14,165,233,0.45)]"
+        className="relative z-10 mb-8 flex h-28 w-28 items-center justify-center rounded-[32px] bg-gradient-to-r from-cyan-500 to-blue-600 text-5xl font-black text-white shadow-[0_20px_80px_rgba(37,99,235,0.25)]"
       >
         R
       </motion.div>
@@ -100,7 +100,7 @@ export default function Preloader({
         transition={{
           delay: 0.2,
         }}
-        className="relative z-10 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 bg-clip-text text-5xl font-black text-transparent"
+        className="relative z-10 bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-5xl font-black text-transparent"
       >
         ReSync
       </motion.h1>
@@ -116,13 +116,13 @@ export default function Preloader({
         transition={{
           delay: 0.4,
         }}
-        className="relative z-10 mt-3 text-center text-sm tracking-[0.3em] text-slate-400"
+        className="relative z-10 mt-3 text-center text-sm tracking-[0.3em] text-slate-500"
       >
         SMART RESEARCH PLATFORM
       </motion.p>
 
       {/* Progress Bar */}
-      <div className="relative z-10 mt-12 w-[280px] overflow-hidden rounded-full bg-slate-800 md:w-[340px]">
+      <div className="relative z-10 mt-12 w-[280px] overflow-hidden rounded-full bg-slate-200 md:w-[340px]">
 
         <motion.div
           initial={{
@@ -131,7 +131,7 @@ export default function Preloader({
           animate={{
             width: `${progress}%`,
           }}
-          className="h-3 rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 shadow-[0_0_30px_rgba(14,165,233,0.8)]"
+          className="h-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.25)]"
         />
 
       </div>
@@ -153,11 +153,11 @@ export default function Preloader({
         className="relative z-10 mt-6 flex items-center gap-2"
       >
 
-        <span className="text-3xl font-black text-white">
+        <span className="text-3xl font-black text-slate-900">
           {progress}
         </span>
 
-        <span className="text-lg font-bold text-cyan-400">
+        <span className="text-lg font-bold text-cyan-500">
           %
         </span>
 
