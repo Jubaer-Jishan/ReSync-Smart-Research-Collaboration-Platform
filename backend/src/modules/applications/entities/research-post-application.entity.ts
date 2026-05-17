@@ -38,7 +38,4 @@ export class ResearchPostApplication extends BaseEntity {
   })
   @Index()
   status!: ApplicationStatus;
-
-  @Index()
-  createdAt!: Date;
 }

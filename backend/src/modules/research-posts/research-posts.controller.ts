@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import type { Multer } from 'multer';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -38,7 +39,7 @@ export class ResearchPostsController {
   async create(
     @CurrentUser() user: { id: string },
     @Body() dto: CreatePostDto,
-    @UploadedFiles() files: Express.Multer.File[] = [],
+    @UploadedFiles() files: Multer.File[] = [],
   ) {
     const images = (files ?? []).map((file) => ({
       fileBuffer: file.buffer,

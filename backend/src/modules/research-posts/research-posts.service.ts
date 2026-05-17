@@ -16,7 +16,7 @@ import { PostStatus } from './enums/post-status.enum';
 import { PostMedia } from './entities/post-media.entity';
 import { ResearchPost } from './entities/research-post.entity';
 import { STORAGE_SERVICE } from '../../storage/storage.constants';
-import { StorageService } from '../../storage/storage.interfaces';
+import type { StorageService } from '../../storage/storage.interfaces';
 import {
   ResearchPostMediaService,
   UploadPostMediaInput,

@@ -8,7 +8,7 @@ import { Inject } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { STORAGE_SERVICE } from '../../storage/storage.constants';
-import { StorageService } from '../../storage/storage.interfaces';
+import type { StorageService } from '../../storage/storage.interfaces';
 
 const MAX_FILES_PER_POST = 4;
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;

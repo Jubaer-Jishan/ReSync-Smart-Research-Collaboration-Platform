@@ -7,6 +7,8 @@ import { UsersModule } from './modules/users/users.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { ApplicationsModule } from './modules/applications/applications.module';
+import { ResearchPostsModule } from './modules/research-posts/research-posts.module';
 import { StorageModule } from './storage/storage.module';
 
 
@@ -23,6 +25,8 @@ import { StorageModule } from './storage/storage.module';
     GroupsModule,
     AuthModule,
     ProjectsModule,
+    ApplicationsModule,
+    ResearchPostsModule,
     StorageModule,
   ],
 })
