@@ -4,6 +4,7 @@ import {
   useState,
   useRef,
 } from "react";
+import { useRouter } from "next/navigation";
 
 import ForgotPasswordModal from "./ForgotPasswordModal";
 
@@ -13,6 +14,7 @@ import {
 } from "react-icons/fa";
 
 export default function LoginForm() {
+  const router = useRouter();
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -64,6 +66,7 @@ export default function LoginForm() {
       const data =
         (await response.json()) as {
           accessToken?: string;
+          user?: Record<string, unknown>;
           message?: string;
           error?: string;
           statusCode?: number;
@@ -84,7 +87,14 @@ export default function LoginForm() {
         );
       }
 
-      alert("Login successful 😄🔥");
+      if (data.user) {
+        localStorage.setItem(
+          "resync_user",
+          JSON.stringify(data.user),
+        );
+      }
+
+      router.push("/feed");
     } catch (error) {
       const message =
         error instanceof Error
