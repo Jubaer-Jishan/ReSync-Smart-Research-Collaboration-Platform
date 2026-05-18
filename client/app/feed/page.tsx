@@ -179,9 +179,10 @@ export default function FeedPage() {
           userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
           userRole={user?.role ?? "Collaborator"}
           avatarUrl={user?.avatarUrl}
+          userUsername={user?.username}
         />
 
-        <main className="relative mx-auto flex max-w-7xl gap-6 px-4 pb-24 pt-6 md:px-6">
+        <main className="relative mx-auto flex max-w-[85vw] gap-6 px-4 pb-24 pt-6 md:px-6">
           <AppLeftSidebar
             userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
             userRole={user?.role ?? "Collaborator"}
