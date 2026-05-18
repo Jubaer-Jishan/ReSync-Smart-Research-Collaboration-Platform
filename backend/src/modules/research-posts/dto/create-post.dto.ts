@@ -52,9 +52,10 @@ export class CreatePostDto {
   @ArrayMinSize(1)
   requiredRoles?: string[];
 
-  @IsInt()
-  @Min(1)
-  @Max(20)
+  @Type(() => Number)
+  @IsInt({ message: 'Required collaborators must be an integer between 1 and 20.' })
+  @Min(1, { message: 'Required collaborators must be between 1 and 20.' })
+  @Max(20, { message: 'Required collaborators must be between 1 and 20.' })
   requiredCollaborators!: number;
 
   @IsEnum(Department)

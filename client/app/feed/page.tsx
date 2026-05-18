@@ -10,6 +10,7 @@ import CreatePostCard from "../../components/CreatePostCard";
 import PostCard from "../../components/PostCard";
 import MobileBottomNav from "../../components/MobileBottomNav";
 import FloatingCreateButton from "../../components/FloatingCreateButton";
+import ForgotPasswordModal from "../../components/ForgotPasswordModal";
 import {
   clearAuth,
   fetchMe,
@@ -31,6 +32,8 @@ export default function FeedPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
+  const displayAvatar = user?.profilePictureUrl ?? user?.avatarUrl;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
 
@@ -61,7 +64,6 @@ export default function FeedPage() {
       .catch(() => {
         // Lenis is optional for core rendering.
       });
-
     return () => {
       mounted = false;
       cancelAnimationFrame(rafId);
@@ -178,7 +180,7 @@ export default function FeedPage() {
           onLogout={handleLogout}
           userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
           userRole={user?.role ?? "Collaborator"}
-          avatarUrl={user?.avatarUrl}
+          avatarUrl={displayAvatar}
           userUsername={user?.username}
         />
 
@@ -186,7 +188,8 @@ export default function FeedPage() {
           <AppLeftSidebar
             userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
             userRole={user?.role ?? "Collaborator"}
-            avatarUrl={user?.avatarUrl}
+            avatarUrl={displayAvatar}
+            onChangePassword={() => setIsPasswordResetOpen(true)}
           />
 
           <section className="flex-1 space-y-6">
@@ -194,7 +197,7 @@ export default function FeedPage() {
               <CreatePostCard
                 onPostCreated={handlePostCreated}
                 userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
-                avatarUrl={user?.avatarUrl}
+                avatarUrl={displayAvatar}
               />
             </div>
 
@@ -230,6 +233,12 @@ export default function FeedPage() {
 
         <FloatingCreateButton onClick={handleScrollToComposer} />
         <MobileBottomNav />
+
+        <ForgotPasswordModal
+          isOpen={isPasswordResetOpen}
+          onClose={() => setIsPasswordResetOpen(false)}
+          defaultEmail={user?.email ?? ""}
+        />
       </div>
     </PageTransition>
   );

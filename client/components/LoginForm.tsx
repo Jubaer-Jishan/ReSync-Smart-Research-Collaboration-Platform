@@ -7,6 +7,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import { login } from "../lib/api";
 
 import {
   FaEye,
@@ -30,15 +31,14 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
+  const [rememberMe, setRememberMe] =
+    useState(false);
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null);
 
   const [isForgotOpen, setIsForgotOpen] =
     useState(false);
-
-  const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://localhost:3001/api";
 
   const handleSubmit = async (
     e: React.FormEvent,
@@ -49,50 +49,11 @@ export default function LoginForm() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(
-        `${apiBaseUrl}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        },
-      );
-
-      const data =
-        (await response.json()) as {
-          accessToken?: string;
-          user?: Record<string, unknown>;
-          message?: string;
-          error?: string;
-          statusCode?: number;
-        };
-
-      if (!response.ok) {
-        throw new Error(
-          data.message ??
-            data.error ??
-            "Login failed",
-        );
-      }
-
-      if (data.accessToken) {
-        localStorage.setItem(
-          "resync_access_token",
-          data.accessToken,
-        );
-      }
-
-      if (data.user) {
-        localStorage.setItem(
-          "resync_user",
-          JSON.stringify(data.user),
-        );
-      }
+      await login({
+        email,
+        password,
+        rememberMe,
+      });
 
       router.push("/feed");
     } catch (error) {
@@ -212,12 +173,20 @@ onKeyDown={(e) => {
 
             <input
               type="checkbox"
+              checked={rememberMe}
+              onChange={(e) =>
+                setRememberMe(e.target.checked)
+              }
               className="h-4 w-4 rounded border-slate-300 text-cyan-500 focus:ring-cyan-500"
             />
 
             Remember me
 
           </label>
+
+          <p className="text-xs text-slate-400">
+            Keeps you signed in for 7 days on this device.
+          </p>
 
           {/* Forgot Password */}
           <button
@@ -257,6 +226,7 @@ onKeyDown={(e) => {
         onClose={() =>
           setIsForgotOpen(false)
         }
+        defaultEmail={email}
       />
 
     </div>

@@ -8,6 +8,7 @@ import {
   HiOutlineShare,
 } from "react-icons/hi";
 import type { ResearchPost } from "../lib/api";
+import UserAvatar from "./UserAvatar";
 
 const timeFormatter = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",
@@ -38,22 +39,16 @@ function formatTimeAgo(dateString?: string): string {
   return timeFormatter.format(days, "day");
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
 interface PostCardProps {
   post: ResearchPost;
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  const authorName = post.createdBy?.fullName ?? post.createdBy?.name ?? "Researcher";
+  const authorName =
+    post.createdBy?.fullName ?? post.createdBy?.name ?? "Researcher";
   const authorRole = post.createdBy?.role ?? "Collaborator";
+  const authorAvatar =
+    post.createdBy?.profilePictureUrl ?? post.createdBy?.avatarUrl;
   const mediaUrl = post.media?.[0]?.url;
 
   return (
@@ -66,7 +61,11 @@ export default function PostCard({ post }: PostCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-2xl bg-slate-100 text-sm font-semibold text-slate-600 flex items-center justify-center">
-            {getInitials(authorName)}
+            <UserAvatar
+              src={authorAvatar}
+              alt={authorName}
+              iconClassName="text-slate-500"
+            />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">{authorName}</p>

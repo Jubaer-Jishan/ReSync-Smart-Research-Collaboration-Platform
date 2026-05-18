@@ -9,6 +9,7 @@ import AppNavbar from "../../../components/AppNavbar";
 import AppLeftSidebar from "../../../components/AppLeftSidebar";
 import AppRightSidebar from "../../../components/AppRightSidebar";
 import PostCard from "../../../components/PostCard";
+import UserAvatar from "../../../components/UserAvatar";
 import {
   clearAuth,
   fetchMe,
@@ -128,6 +129,7 @@ export default function ProfilePage() {
     profileForm.bio?.trim() || (user as { bio?: string })?.bio?.trim() || "";
   const displayInstitution =
     profileForm.institution?.trim() || user?.institution?.trim() || "";
+  const followersCount = user?.followersCount ?? 0;
 
   const applyUserToForms = (freshUser: AuthUser) => {
     const studentProfile = freshUser.studentProfile;
@@ -482,7 +484,7 @@ export default function ProfilePage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                <label className="absolute right-6 top-6 cursor-pointer rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+                <label className="absolute right-6 top-6 cursor-pointer rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white opacity-0 backdrop-blur transition group-hover:opacity-100 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100">
                   Upload banner
                   <input
                     type="file"
@@ -491,23 +493,13 @@ export default function ProfilePage() {
                     className="hidden"
                   />
                 </label>
-                <div className="absolute bottom-0 left-6 flex items-end gap-5 pb-4">
+                <div className="absolute bottom-0 left-6 flex items-end gap-4">
                   <div className="group/avatar relative h-20 w-20 overflow-hidden rounded-[24px] border-4 border-white bg-slate-100 shadow-xl">
-                    {displayAvatar ? (
-                      <img
-                        src={displayAvatar}
-                        alt={displayName}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-600">
-                        {displayName
-                          .split(" ")
-                          .map((part) => part[0])
-                          .slice(0, 2)
-                          .join("")}
-                      </div>
-                    )}
+                    <UserAvatar
+                      src={displayAvatar}
+                      alt={displayName}
+                      iconClassName="text-2xl text-slate-500"
+                    />
                     <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-900/50 text-[10px] font-semibold uppercase tracking-widest text-white opacity-0 transition group-hover/avatar:opacity-100">
                       Change photo
                       <input
@@ -518,13 +510,13 @@ export default function ProfilePage() {
                       />
                     </label>
                   </div>
-                  <div className="space-y-2 pb-4 text-white">
+                  <div className="space-y-1 pb-4 text-white">
                     <h1 className="text-3xl font-semibold tracking-tight">
                       {displayName}
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
-                      <span className="rounded-full border border-white/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.3em]">
-                        {displayRole}
+                      <span className="rounded-full border border-white/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em]">
+                        {followersCount} Followers
                       </span>
                     </div>
                   </div>
@@ -537,6 +529,9 @@ export default function ProfilePage() {
                     <p>{displayBio || "No bio added yet."}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      {displayRole}
+                    </span>
                     <HiOutlineOfficeBuilding className="text-base text-slate-400" />
                     <p>{displayInstitution || "Institution not specified"}</p>
                   </div>

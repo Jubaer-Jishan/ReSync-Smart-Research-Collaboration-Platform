@@ -16,6 +16,7 @@ export type PostUser = {
   name?: string;
   email?: string;
   avatarUrl?: string;
+  profilePictureUrl?: string;
   role?: string;
 };
 
@@ -43,6 +44,7 @@ export type AuthUser = {
   googleScholarProfile?: string;
   researchGateProfile?: string;
   role?: string;
+  followersCount?: number;
   academicLevel?: string;
   studentProfile?: {
     institution?: string;
@@ -94,52 +96,325 @@ export type PaginatedPosts = {
 
 export const ACCESS_TOKEN_KEY = "resync_access_token";
 export const USER_KEY = "resync_user";
+const AUTH_SESSION_KEY = "resync_auth_session";
+const AUTH_EXPIRES_AT_KEY = "resync_auth_expires_at";
+const AUTH_REMEMBER_ME_KEY = "resync_auth_remember_me";
+const REMEMBER_ME_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+let authExpiryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-export function getAccessToken(): string | null {
-  if (typeof window === "undefined") {
-    return null;
+type StoredAuthSession = {
+  accessToken: string;
+  user: AuthUser;
+  rememberMe: boolean;
+  expiresAt?: number;
+};
+
+function normalizeErrorMessage(
+  errorBody: unknown,
+  fallback: string,
+): string {
+  const rawMessage =
+    typeof errorBody === "object" && errorBody !== null
+      ? (errorBody as { message?: unknown; error?: unknown }).message ??
+        (errorBody as { message?: unknown; error?: unknown }).error
+      : null;
+
+  if (Array.isArray(rawMessage)) {
+    const uniqueMessages = [...new Set(rawMessage.filter((item) => typeof item === "string"))];
+    return uniqueMessages[0] ?? fallback;
   }
 
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (typeof rawMessage === "string") {
+    return rawMessage;
+  }
+
+  if (typeof errorBody === "string") {
+    return errorBody;
+  }
+
+  return fallback;
 }
 
-export function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") {
-    return null;
+function isBrowser(): boolean {
+  return typeof window !== "undefined";
+}
+
+function readStoredSession(storage: Storage): StoredAuthSession | null {
+  const rawSession = storage.getItem(AUTH_SESSION_KEY);
+  if (rawSession) {
+    try {
+      const parsed = JSON.parse(rawSession) as StoredAuthSession;
+      if (!parsed.accessToken || !parsed.user) {
+        return null;
+      }
+
+      if (parsed.expiresAt && Date.now() >= parsed.expiresAt) {
+        storage.removeItem(AUTH_SESSION_KEY);
+        storage.removeItem(ACCESS_TOKEN_KEY);
+        storage.removeItem(USER_KEY);
+        storage.removeItem(AUTH_EXPIRES_AT_KEY);
+        storage.removeItem(AUTH_REMEMBER_ME_KEY);
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      storage.removeItem(AUTH_SESSION_KEY);
+    }
   }
 
-  const raw = localStorage.getItem(USER_KEY);
-  if (!raw) {
+  const accessToken = storage.getItem(ACCESS_TOKEN_KEY);
+  const rawUser = storage.getItem(USER_KEY);
+
+  if (!accessToken || !rawUser) {
     return null;
   }
 
   try {
-    return JSON.parse(raw) as AuthUser;
+    const user = JSON.parse(rawUser) as AuthUser;
+    if (!user) {
+      return null;
+    }
+
+    const expiresAtValue = storage.getItem(AUTH_EXPIRES_AT_KEY);
+    const expiresAt = expiresAtValue ? Number(expiresAtValue) : undefined;
+    if (expiresAt && Number.isFinite(expiresAt) && Date.now() >= expiresAt) {
+      storage.removeItem(AUTH_SESSION_KEY);
+      storage.removeItem(ACCESS_TOKEN_KEY);
+      storage.removeItem(USER_KEY);
+      storage.removeItem(AUTH_EXPIRES_AT_KEY);
+      storage.removeItem(AUTH_REMEMBER_ME_KEY);
+      return null;
+    }
+
+    const rememberMe = storage.getItem(AUTH_REMEMBER_ME_KEY) === "true";
+    return {
+      accessToken,
+      user,
+      rememberMe,
+      expiresAt: Number.isFinite(expiresAt ?? NaN) ? expiresAt : undefined,
+    };
   } catch {
+    storage.removeItem(AUTH_SESSION_KEY);
+    storage.removeItem(ACCESS_TOKEN_KEY);
+    storage.removeItem(USER_KEY);
+    storage.removeItem(AUTH_EXPIRES_AT_KEY);
+    storage.removeItem(AUTH_REMEMBER_ME_KEY);
     return null;
   }
 }
 
+function clearStoredSession(storage: Storage): void {
+  storage.removeItem(AUTH_SESSION_KEY);
+  storage.removeItem(ACCESS_TOKEN_KEY);
+  storage.removeItem(USER_KEY);
+  storage.removeItem(AUTH_EXPIRES_AT_KEY);
+  storage.removeItem(AUTH_REMEMBER_ME_KEY);
+}
+
+function persistAuthSession(session: StoredAuthSession): void {
+  if (!isBrowser()) {
+    return;
+  }
+
+  if (authExpiryTimeoutId) {
+    clearTimeout(authExpiryTimeoutId);
+    authExpiryTimeoutId = null;
+  }
+
+  const storage = session.rememberMe ? localStorage : sessionStorage;
+  clearStoredSession(localStorage);
+  clearStoredSession(sessionStorage);
+
+  storage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  storage.setItem(ACCESS_TOKEN_KEY, session.accessToken);
+  storage.setItem(USER_KEY, JSON.stringify(session.user));
+  storage.setItem(AUTH_REMEMBER_ME_KEY, session.rememberMe ? "true" : "false");
+
+  if (session.expiresAt) {
+    storage.setItem(AUTH_EXPIRES_AT_KEY, String(session.expiresAt));
+
+    const delay = session.expiresAt - Date.now();
+    if (delay > 0) {
+      authExpiryTimeoutId = setTimeout(() => {
+        clearAuth();
+      }, delay);
+    }
+  }
+}
+
+function parseApiError(errorBody: unknown, fallback: string): string {
+  return normalizeErrorMessage(errorBody, fallback);
+}
+
+export type LoginInput = {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+};
+
+export type AuthResponse = {
+  message?: string;
+  accessToken?: string;
+  user?: AuthUser;
+};
+
+export function getAccessToken(): string | null {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  const localSession = readStoredSession(localStorage);
+  if (localSession?.accessToken) {
+    return localSession.accessToken;
+  }
+
+  const session = readStoredSession(sessionStorage);
+  return session?.accessToken ?? null;
+}
+
+export function getStoredUser(): AuthUser | null {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  return readStoredSession(localStorage)?.user ?? readStoredSession(sessionStorage)?.user ?? null;
+}
+
 export function setStoredUser(user: AuthUser | null): void {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) {
     return;
   }
 
   if (!user) {
-    localStorage.removeItem(USER_KEY);
+    clearStoredSession(localStorage);
+    clearStoredSession(sessionStorage);
     return;
   }
 
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  const currentSession = readStoredSession(localStorage) ?? readStoredSession(sessionStorage);
+  const rememberMe = currentSession?.rememberMe ?? false;
+  const expiresAt = currentSession?.expiresAt;
+  const accessToken = currentSession?.accessToken ?? getAccessToken();
+
+  if (!accessToken) {
+    return;
+  }
+
+  persistAuthSession({
+    accessToken,
+    user,
+    rememberMe,
+    expiresAt,
+  });
 }
 
 export function clearAuth(): void {
-  if (typeof window === "undefined") {
+  if (!isBrowser()) {
     return;
   }
 
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  if (authExpiryTimeoutId) {
+    clearTimeout(authExpiryTimeoutId);
+    authExpiryTimeoutId = null;
+  }
+
+  clearStoredSession(localStorage);
+  clearStoredSession(sessionStorage);
+}
+
+export async function login(input: LoginInput): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email: input.email,
+      password: input.password,
+    }),
+  });
+
+  const data = (await response.json().catch(() => null)) as AuthResponse | null;
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Login failed"));
+  }
+
+  if (data?.accessToken && data.user) {
+    persistAuthSession({
+      accessToken: data.accessToken,
+      user: data.user,
+      rememberMe: Boolean(input.rememberMe),
+      expiresAt: input.rememberMe ? Date.now() + REMEMBER_ME_TTL_MS : undefined,
+    });
+  }
+
+  return data ?? {};
+}
+
+export async function requestPasswordReset(email: string): Promise<{ success: true }> {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to send OTP"));
+  }
+
+  return { success: true };
+}
+
+export async function verifyPasswordReset(email: string, otp: string): Promise<{ success: true }> {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, otp }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Invalid OTP"));
+  }
+
+  return { success: true };
+}
+
+export async function resetPassword(
+  email: string,
+  otp: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<{ success: true }> {
+  const response = await fetch(`${API_BASE_URL}/auth/password-reset/reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      otp,
+      newPassword,
+      confirmPassword,
+    }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to reset password"));
+  }
+
+  return { success: true };
 }
 
 async function authFetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -407,9 +682,7 @@ export async function createPost(input: CreatePostInput): Promise<ResearchPost> 
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null);
-    const message =
-      (errorBody && (errorBody.message || errorBody.error)) ||
-      "Failed to create post";
+    const message = normalizeErrorMessage(errorBody, "Failed to create post");
     throw new Error(message);
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   HiOutlineHome,
@@ -15,20 +15,24 @@ import {
   HiOutlineX,
 } from "react-icons/hi";
 import { AnimatePresence, motion } from "framer-motion";
+import UserAvatar from "./UserAvatar";
 
 interface AppLeftSidebarProps {
   userName?: string;
   userRole?: string;
   avatarUrl?: string;
+  onChangePassword?: () => void;
 }
 
 export default function AppLeftSidebar({
   userName = "",
   userRole = "",
   avatarUrl,
+  onChangePassword,
 }: AppLeftSidebarProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [requestsOpen, setRequestsOpen] = useState(false);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
@@ -48,7 +52,59 @@ export default function AppLeftSidebar({
 
   const handleNavigate = (label: string) => {
     if (label === "Home") {
+      setSelectedItem("Home");
       router.push("/feed");
+    }
+  };
+
+  const handleSelect = (item: string) => {
+    setSelectedItem(item);
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      localStorage.setItem("resync-sidebar-selected-item", item);
+    } catch {
+      // Ignore storage errors.
+    }
+  };
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    setDarkModeEnabled(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem("resync-sidebar-selected-item");
+      setSelectedItem(stored);
+    } catch {
+      setSelectedItem(null);
+    }
+  }, []);
+
+  const handleToggleDarkMode = () => {
+    const next = !darkModeEnabled;
+    setDarkModeEnabled(next);
+
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.documentElement.classList.toggle("dark", next);
+    document.documentElement.style.colorScheme = next ? "dark" : "light";
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {
+      // Ignore storage errors.
     }
   };
 
@@ -63,8 +119,15 @@ export default function AppLeftSidebar({
     <div className="flex h-full flex-col gap-6">
       <div className="space-y-1">
         <button
-          onClick={() => handleNavigate("Home")}
-          className="flex w-full items-center gap-3 rounded-2xl bg-blue-50 px-3 py-2.5 text-left text-sm font-medium text-blue-600 transition hover:bg-blue-100"
+          onClick={() => {
+            handleSelect("Home");
+            handleNavigate("Home");
+          }}
+          className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+            selectedItem === "Home"
+              ? "bg-blue-50 text-blue-600"
+              : "text-slate-700 hover:bg-slate-100"
+          }`}
         >
           <HiOutlineHome className="text-lg" />
           Home
@@ -72,8 +135,15 @@ export default function AppLeftSidebar({
 
         <div className="space-y-1">
           <button
-            onClick={() => setRequestsOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            onClick={() => {
+              handleSelect("Requests");
+              setRequestsOpen((prev) => !prev);
+            }}
+            className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              selectedItem === "Requests"
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
           >
             <span className="flex items-center gap-3">
               <HiOutlineUsers className="text-lg" />
@@ -100,8 +170,15 @@ export default function AppLeftSidebar({
 
         <div className="space-y-1">
           <button
-            onClick={() => setTeamsOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            onClick={() => {
+              handleSelect("Teams");
+              setTeamsOpen((prev) => !prev);
+            }}
+            className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              selectedItem === "Teams"
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
           >
             <span className="flex items-center gap-3">
               <HiOutlineUsers className="text-lg" />
@@ -128,8 +205,15 @@ export default function AppLeftSidebar({
 
         <div className="space-y-1">
           <button
-            onClick={() => setResourcesOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            onClick={() => {
+              handleSelect("Resources");
+              setResourcesOpen((prev) => !prev);
+            }}
+            className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              selectedItem === "Resources"
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
           >
             <span className="flex items-center gap-3">
               <HiOutlineFolderOpen className="text-lg" />
@@ -156,8 +240,15 @@ export default function AppLeftSidebar({
 
         <div className="space-y-1">
           <button
-            onClick={() => setSavedOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            onClick={() => {
+              handleSelect("Saved");
+              setSavedOpen((prev) => !prev);
+            }}
+            className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              selectedItem === "Saved"
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
           >
             <span className="flex items-center gap-3">
               <HiOutlineBookmark className="text-lg" />
@@ -184,8 +275,15 @@ export default function AppLeftSidebar({
 
         <div className="space-y-1">
           <button
-            onClick={() => setSettingsOpen((prev) => !prev)}
-            className="flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            onClick={() => {
+              handleSelect("Settings");
+              setSettingsOpen((prev) => !prev);
+            }}
+            className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              selectedItem === "Settings"
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-700 hover:bg-slate-100"
+            }`}
           >
             <span className="flex items-center gap-3">
               <HiOutlineCog className="text-lg" />
@@ -206,7 +304,7 @@ export default function AppLeftSidebar({
               >
                 <div className="ml-[2%] flex flex-col gap-2 border-l border-slate-200/70 py-2 pl-4">
                   <button
-                    onClick={() => setDarkModeEnabled((prev) => !prev)}
+                    onClick={handleToggleDarkMode}
                     className="relative flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-slate-100 before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-slate-200/70"
                   >
                     <span className="flex items-center">
@@ -225,7 +323,10 @@ export default function AppLeftSidebar({
                       />
                     </span>
                   </button>
-                  <button className="relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-slate-100 before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-slate-200/70">
+                  <button
+                    onClick={onChangePassword}
+                    className="relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-slate-100 before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-slate-200/70"
+                  >
                     <HiOutlineLockClosed className="text-base" />
                     Change Password
                   </button>
@@ -239,19 +340,11 @@ export default function AppLeftSidebar({
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 text-sm font-semibold text-white">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              displayName
-                .split(" ")
-                .map((part) => part[0])
-                .slice(0, 2)
-                .join("")
-            )}
+            <UserAvatar
+              src={avatarUrl}
+              alt={displayName}
+              iconClassName="text-lg text-white"
+            />
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">

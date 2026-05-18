@@ -7,9 +7,9 @@ import {
   HiOutlineChatAlt2,
   HiOutlinePlus,
   HiOutlineSearch,
-  HiOutlineUser,
 } from "react-icons/hi";
 import { motion, AnimatePresence } from "framer-motion";
+import UserAvatar from "./UserAvatar";
 
 interface AppNavbarProps {
   onCreatePost?: () => void;
@@ -117,17 +117,11 @@ export default function AppNavbar({
               className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm transition hover:border-blue-300"
             >
               <div className="h-9 w-9 overflow-hidden rounded-xl bg-slate-200">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={userName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-slate-600">
-                    <HiOutlineUser className="text-xl" />
-                  </div>
-                )}
+                <UserAvatar
+                  src={avatarUrl}
+                  alt={userName}
+                  iconClassName="text-xl text-slate-600"
+                />
               </div>
             </button>
 
