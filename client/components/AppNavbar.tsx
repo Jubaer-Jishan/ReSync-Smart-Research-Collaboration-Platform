@@ -17,6 +17,7 @@ interface AppNavbarProps {
   userName?: string;
   userRole?: string;
   avatarUrl?: string;
+  userUsername?: string;
 }
 
 export default function AppNavbar({
@@ -25,6 +26,7 @@ export default function AppNavbar({
   userName = "Ayesha Rahman",
   userRole = "Researcher",
   avatarUrl,
+  userUsername,
 }: AppNavbarProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -34,6 +36,8 @@ export default function AppNavbar({
     setOpen(false);
     router.push(path);
   };
+
+  const profilePath = userUsername ? `/profile/${userUsername}` : "/profile";
 
   const handleLogout = () => {
     setOpen(false);
@@ -56,7 +60,7 @@ export default function AppNavbar({
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
+      <nav className="mx-auto flex max-w-[85vw] items-center justify-between px-4 py-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
@@ -137,7 +141,7 @@ export default function AppNavbar({
                   className="absolute right-0 mt-3 w-48 rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-xl"
                 >
                   <button
-                    onClick={() => handleNavigate("/profile")}
+                    onClick={() => handleNavigate(profilePath)}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-slate-700 transition hover:bg-slate-100"
                   >
                     Profile
@@ -149,7 +153,7 @@ export default function AppNavbar({
                     My Groups
                   </button>
                   <button
-                    onClick={() => handleNavigate("/profile?tab=settings")}
+                    onClick={() => handleNavigate(`${profilePath}?tab=settings`)}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-slate-700 transition hover:bg-slate-100"
                   >
                     Settings
