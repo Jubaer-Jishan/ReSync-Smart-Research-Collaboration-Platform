@@ -59,3 +59,27 @@ No JSON body. Requires Authorization header.
   "totalPublications": 12,
   "hIndex": 8
 }
+
+### Follow/Unfollow Users
+
+#### POST /users/:id/follow
+- **Description**: Follow a user.
+- **Authorization**: Bearer token required.
+- **Request Body**: None.
+- **Response**: 204 No Content.
+
+#### DELETE /users/:id/follow
+- **Description**: Unfollow a user.
+- **Authorization**: Bearer token required.
+- **Request Body**: None.
+- **Response**: 204 No Content.
+
+#### GET /users/:id/followers
+- **Description**: Get followers of a user.
+- **Authorization**: None.
+- **Response**: Array of user objects.
+
+#### GET /users/:id/following
+- **Description**: Get users followed by a user.
+- **Authorization**: None.
+- **Response**: Array of user objects.

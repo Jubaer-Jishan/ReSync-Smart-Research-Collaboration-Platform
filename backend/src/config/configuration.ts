@@ -20,6 +20,9 @@ export default () => {
   auth: {
     jwtSecret: process.env.JWT_SECRET,
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1d',
+    refreshJwtSecret:
+      process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET,
+    refreshJwtExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
   redis: {
     url: process.env.REDIS_URL,

@@ -17,19 +17,41 @@ Authorization: Bearer <access_token>
   "phoneNumber": "01712345678",
   "role": "STUDENT",
   "password": "asdfjkl;",
-  "confirmPassword": "asdfjkl;"
+  "confirmPassword": "asdfjkl;",
+  "rememberMe": true
 }
 
 ## POST /auth/login
 
 {
   "email": "jubaerjishan.65@gmail.com",
-  "password": "asdfjkl;"
+  "password": "asdfjkl;",
+  "rememberMe": true
+}
+
+Response:
+
+{
+  "message": "Login successful",
+  "accessToken": "<access_token>",
+  "user": { }
 }
 
 ## POST /auth/logout
 
 No JSON body. Requires Authorization header.
+
+## POST /auth/refresh
+
+Refresh token is read from the `HttpOnly` cookie.
+
+Response:
+
+{
+  "message": "Token refreshed successfully",
+  "accessToken": "<new_access_token>",
+  "user": { }
+}
 
 ## POST /auth/verify-email/request
 

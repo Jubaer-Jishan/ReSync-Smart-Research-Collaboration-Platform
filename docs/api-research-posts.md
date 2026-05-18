@@ -91,3 +91,33 @@ No JSON body.
   "githubLink": "https://github.com/example",
   "researchExperience": "Worked on an NLP project in 2025 and published a workshop paper."
 }
+
+## POST /posts/:id/likes
+
+Requires Authorization header.
+
+No JSON body.
+
+## DELETE /posts/:id/likes
+
+Requires Authorization header.
+
+No JSON body.
+
+## POST /posts/:id/comments
+
+Requires Authorization header.
+
+{
+  "content": "Great post. Interested to join the study."
+}
+
+## GET /posts/:id/comments
+
+No JSON body.
+
+## POST /posts/:id/shares
+
+Requires Authorization header.
+
+No JSON body.
