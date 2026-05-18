@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   HiOutlinePhotograph,
-  HiOutlinePaperClip,
-  HiOutlineAtSymbol,
+  HiOutlineUsers,
 } from "react-icons/hi";
 import { createPost, type ResearchPost } from "../lib/api";
+import UserAvatar from "./UserAvatar";
 
 const researchDomains = [
   "AI_ML",
@@ -165,6 +165,7 @@ export default function CreatePostCard({
   });
   const [images, setImages] = useState<File[]>([]);
   const [expanded, setExpanded] = useState(false);
+  const [teamUpSelected, setTeamUpSelected] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -227,6 +228,7 @@ export default function CreatePostCard({
       setDescription("");
       setImages([]);
       setExpanded(false);
+      setTeamUpSelected(false);
     } catch (submitError) {
       const message =
         submitError instanceof Error
@@ -247,19 +249,11 @@ export default function CreatePostCard({
     >
       <div className="flex items-start gap-4">
         <div className="h-11 w-11 overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={userName}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            userName
-              .split(" ")
-              .map((part) => part[0])
-              .slice(0, 2)
-              .join("")
-          )}
+          <UserAvatar
+            src={avatarUrl}
+            alt={userName}
+            iconClassName="text-white"
+          />
         </div>
         <div className="flex-1 space-y-4">
           <input
@@ -288,17 +282,41 @@ export default function CreatePostCard({
                 className="hidden"
               />
             </label>
-            <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 transition hover:border-blue-200">
-              <HiOutlinePaperClip className="text-lg" />
-              Attach Resource
-            </button>
-            <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 transition hover:border-blue-200">
-              <HiOutlineAtSymbol className="text-lg" />
-              Mention Group
+            <button
+              type="button"
+              onClick={() => {
+                setTeamUpSelected((prev) => {
+                  const next = !prev;
+                  if (!next) {
+                    setExpanded(false);
+                  }
+                  return next;
+                });
+              }}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 transition ${
+                teamUpSelected
+                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-blue-200"
+              }`}
+            >
+              <HiOutlineUsers className="text-lg" />
+              Team Up
             </button>
             <button
-              className="ml-auto text-sm font-semibold text-blue-600"
-              onClick={() => setExpanded((prev) => !prev)}
+              type="button"
+              disabled={!teamUpSelected}
+              className={`ml-auto text-sm font-semibold transition ${
+                teamUpSelected
+                  ? "text-blue-600 hover:text-blue-700"
+                  : "cursor-not-allowed text-slate-300"
+              }`}
+              onClick={() => {
+                if (!teamUpSelected) {
+                  return;
+                }
+
+                setExpanded((prev) => !prev);
+              }}
             >
               {expanded ? "Hide details" : "Add details"}
             </button>
@@ -321,7 +339,7 @@ export default function CreatePostCard({
             </div>
           )}
 
-          {expanded && (
+          {expanded && teamUpSelected && (
             <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
               <label className="space-y-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Research Domain
@@ -419,9 +437,18 @@ export default function CreatePostCard({
                   type="number"
                   min={1}
                   max={20}
+                  step={1}
                   value={requiredCollaborators}
                   onChange={(event) =>
-                    setRequiredCollaborators(Number(event.target.value))
+                    setRequiredCollaborators(
+                      Math.min(
+                        20,
+                        Math.max(
+                          1,
+                          Number.parseInt(event.target.value || "1", 10) || 1,
+                        ),
+                      ),
+                    )
                   }
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"
                 />

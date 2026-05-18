@@ -5,7 +5,10 @@ import {
   AnimatePresence,
 } from "framer-motion";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   FaEye,
@@ -13,20 +16,31 @@ import {
   FaArrowLeft,
 } from "react-icons/fa";
 
+import {
+  requestPasswordReset,
+  resetPassword,
+  verifyPasswordReset,
+} from "../lib/api";
+
 interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultEmail?: string;
 }
 
 export default function ForgotPasswordModal({
   isOpen,
   onClose,
+  defaultEmail = "",
 }: ForgotPasswordModalProps) {
 
   const [step, setStep] =
     useState(1);
 
   const [email, setEmail] =
+    useState("");
+
+  const [otpValue, setOtpValue] =
     useState("");
 
   const [shake, setShake] =
@@ -79,10 +93,112 @@ export default function ForgotPasswordModal({
   const [otpShake, setOtpShake] =
     useState(false);
 
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null);
+
+  const [successMessage, setSuccessMessage] =
+    useState<string | null>(null);
+
   const isOtpComplete =
     otp.every(
       (digit) => digit !== ""
     );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setStep(1);
+    setEmail(defaultEmail);
+    setOtp(["", "", "", "", "", ""]);
+    setOtpValue("");
+    setPassword("");
+    setConfirmPassword("");
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }, [defaultEmail, isOpen]);
+
+  const resetShakeEffect = () => {
+    setResetShake(true);
+    setTimeout(() => {
+      setResetShake(false);
+    }, 500);
+  };
+
+  const otpText = otpValue || otp.join("");
+
+  const handleSendOtp = async () => {
+    if (!isValidEmail) {
+      setShake(true);
+      setTimeout(() => {
+        setShake(false);
+      }, 500);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await requestPasswordReset(email);
+      setStep(2);
+      setSuccessMessage("OTP has been sent to your registered email.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to send OTP");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!isOtpComplete) {
+      setOtpShake(true);
+      setTimeout(() => {
+        setOtpShake(false);
+      }, 500);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await verifyPasswordReset(email, otpText);
+      setStep(3);
+      setSuccessMessage("OTP verified successfully.");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Invalid OTP");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!passwordsMatch || !isValidPassword || otpText.length !== 6) {
+      resetShakeEffect();
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      await resetPassword(email, otpText, password, confirmPassword);
+      setSuccessMessage("Password changed successfully.");
+      onClose();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to reset password");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleOtpChange = (
     value: string,
@@ -100,6 +216,7 @@ export default function ForgotPasswordModal({
       value;
 
     setOtp(updatedOtp);
+    setOtpValue(updatedOtp.join(""));
 
     if (value && index < 5) {
 
@@ -151,7 +268,16 @@ export default function ForgotPasswordModal({
           >
             {/* Back Button */}
 <button
-  onClick={onClose}
+  onClick={() => {
+    if (step === 1) {
+      onClose();
+      return;
+    }
+
+    setStep((prev) => Math.max(prev - 1, 1));
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  }}
   className="absolute left-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500 text-white transition-all duration-300 hover:scale-110 hover:bg-cyan-600"
 >
   <FaArrowLeft />
@@ -178,6 +304,18 @@ export default function ForgotPasswordModal({
                   Enter your email
                 </p>
 
+                {errorMessage && (
+                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {errorMessage}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                    {successMessage}
+                  </div>
+                )}
+
                 <input
                   type="email"
                   value={email}
@@ -194,7 +332,7 @@ export default function ForgotPasswordModal({
     isValidEmail
   ) {
 
-    setStep(2);
+    void handleSendOtp();
   }
 }}
                   placeholder="example@gmail.com"
@@ -215,22 +353,7 @@ export default function ForgotPasswordModal({
                 <motion.button
                   type="button"
                   onClick={() => {
-
-                    if (
-                      !isValidEmail
-                    ) {
-
-                      setShake(true);
-
-                      setTimeout(() => {
-                        setShake(false);
-                      }, 500);
-
-                      return;
-                    }
-
-                    setStep(2);
-
+                    void handleSendOtp();
                   }}
                   animate={
                     shake
@@ -248,13 +371,14 @@ export default function ForgotPasswordModal({
                   transition={{
                     duration: 0.4,
                   }}
+                  disabled={isSubmitting}
                   className={`mt-6 w-full rounded-2xl py-4 font-bold text-white transition-all duration-300 ${
                     isValidEmail
                       ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-[1.02]"
                       : "bg-red-400"
                   }`}
                 >
-                  Send OTP
+                  {isSubmitting ? "Sending..." : "Send OTP"}
                 </motion.button>
 
               </div>
@@ -273,6 +397,18 @@ export default function ForgotPasswordModal({
                   Enter 6 digit OTP
                 </p>
 
+                {errorMessage && (
+                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {errorMessage}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                    {successMessage}
+                  </div>
+                )}
+
                 <div className="flex justify-center gap-3">
 
                   {otp.map(
@@ -289,7 +425,7 @@ export default function ForgotPasswordModal({
     isOtpComplete
   ) {
 
-    setStep(3);
+    void handleVerifyOtp();
   }
 }}
                         key={index}
@@ -314,26 +450,7 @@ export default function ForgotPasswordModal({
                 <motion.button
                   type="button"
                   onClick={() => {
-
-                    if (
-                      !isOtpComplete
-                    ) {
-
-                      setOtpShake(
-                        true
-                      );
-
-                      setTimeout(() => {
-                        setOtpShake(
-                          false
-                        );
-                      }, 500);
-
-                      return;
-                    }
-
-                    setStep(3);
-
+                    void handleVerifyOtp();
                   }}
                   animate={
                     otpShake
@@ -351,13 +468,14 @@ export default function ForgotPasswordModal({
                   transition={{
                     duration: 0.4,
                   }}
+                  disabled={isSubmitting}
                   className={`mt-8 w-full rounded-2xl py-4 font-bold text-white transition-all duration-300 ${
                     isOtpComplete
                       ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:scale-[1.02]"
                       : "bg-red-400"
                   }`}
                 >
-                  Verify OTP
+                  {isSubmitting ? "Verifying..." : "Verify OTP"}
                 </motion.button>
 
               </div>
@@ -375,6 +493,18 @@ export default function ForgotPasswordModal({
                 <p className="mb-8 text-center text-slate-500">
                   Create new password
                 </p>
+
+                {errorMessage && (
+                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {errorMessage}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                    {successMessage}
+                  </div>
+                )}
 
                 {/* New Password */}
                 <div className="mb-5 flex items-center rounded-2xl border border-slate-200 bg-white px-4 transition-all duration-300 focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
@@ -473,11 +603,7 @@ export default function ForgotPasswordModal({
           isValidPassword
         ) {
 
-          alert(
-            "Password changed successfully 😄🔥"
-          );
-
-          onClose();
+          void handleResetPassword();
 
         } else {
 
@@ -530,29 +656,7 @@ export default function ForgotPasswordModal({
   type="button"
   onClick={() => {
 
-    if (
-      !passwordsMatch ||
-      !isValidPassword
-    ) {
-
-      setResetShake(
-        true
-      );
-
-      setTimeout(() => {
-        setResetShake(
-          false
-        );
-      }, 500);
-
-      return;
-    }
-
-    alert(
-      "Password changed successfully 😄🔥"
-    );
-
-    onClose();
+    void handleResetPassword();
 
   }}
   animate={
@@ -571,6 +675,7 @@ export default function ForgotPasswordModal({
   transition={{
     duration: 0.4,
   }}
+  disabled={isSubmitting}
   className={`mt-8 w-full rounded-2xl py-4 font-bold text-white transition-all duration-300 ${
     passwordsMatch &&
     isValidPassword
@@ -578,7 +683,7 @@ export default function ForgotPasswordModal({
       : "bg-red-400"
   }`}
 >
-  Reset Password
+  {isSubmitting ? "Saving..." : "Reset Password"}
 </motion.button>
 
 </div>
