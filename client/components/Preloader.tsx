@@ -20,34 +20,42 @@ export default function Preloader({
 
   useEffect(() => {
 
-    let current = 0;
+  document.body.style.overflow =
+    "hidden";
 
-    const interval =
-      setInterval(() => {
+  let current = 0;
 
-        current += Math.floor(
-          Math.random() * 8
-        ) + 1;
+  const interval =
+    setInterval(() => {
 
-        if (current >= 100) {
+      current += Math.floor(
+        Math.random() * 8
+      ) + 1;
 
-          current = 100;
+      if (current >= 100) {
 
-          clearInterval(interval);
+        current = 100;
 
-          setTimeout(() => {
-            onFinish();
-          }, 800);
-        }
+        clearInterval(interval);
 
-        setProgress(current);
+        setTimeout(() => {
+          onFinish();
+        }, 800);
+      }
 
-      }, 80);
+      setProgress(current);
 
-    return () =>
-      clearInterval(interval);
+    }, 80);
 
-  }, [onFinish]);
+  return () => {
+
+    clearInterval(interval);
+
+    document.body.style.overflow =
+      "auto";
+  };
+
+}, [onFinish]);
 
   return (
 

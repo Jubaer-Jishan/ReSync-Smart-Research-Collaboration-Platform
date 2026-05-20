@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-import { HiMenu, HiX } from "react-icons/hi";
+import {
+  HiMenu,
+  HiX,
+} from "react-icons/hi";
+
+import {
+  FaMoon,
+  FaSun,
+} from "react-icons/fa";
 
 import {
   motion,
@@ -10,7 +21,9 @@ import {
 } from "framer-motion";
 
 interface NavbarProps {
-  onAuthOpen: (mode: "login" | "register") => void;
+  onAuthOpen: (
+    mode: "login" | "register"
+  ) => void;
 }
 
 export default function Navbar({
@@ -20,52 +33,129 @@ export default function Navbar({
   const [open, setOpen] =
     useState(false);
 
+  const [
+    darkMode,
+    setDarkMode,
+  ] = useState(false);
+
+  /* Theme Setup */
+  useEffect(() => {
+
+    const storedTheme =
+  localStorage.getItem(
+    "theme"
+  );
+
+if (
+  storedTheme === "dark"
+) {
+
+  document.documentElement.classList.add(
+    "dark"
+  );
+
+  setDarkMode(true);
+
+} else {
+
+  document.documentElement.classList.remove(
+    "dark"
+  );
+
+  setDarkMode(false);
+}
+
+    if (
+      storedTheme === "dark"
+    ) {
+
+      document.documentElement.classList.add(
+        "dark"
+      );
+
+      setDarkMode(true);
+    }
+
+  }, []);
+
+  /* Toggle Theme */
+  const toggleTheme = () => {
+
+    const html =
+      document.documentElement;
+
+    if (darkMode) {
+
+      html.classList.remove(
+        "dark"
+      );
+
+      localStorage.setItem(
+        "theme",
+        "light"
+      );
+
+      setDarkMode(false);
+
+    } else {
+
+      html.classList.add(
+        "dark"
+      );
+
+      localStorage.setItem(
+        "theme",
+        "dark"
+      );
+
+      setDarkMode(true);
+    }
+  };
+
   return (
 
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
 
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6 md:py-5">
 
         {/* Logo */}
-<motion.div
-  initial={{
-    opacity: 0,
-    x: -20,
-  }}
-  animate={{
-    opacity: 1,
-    x: 0,
-  }}
-  transition={{
-    duration: 0.5,
-  }}
-  onClick={() =>
-    window.location.reload()
-  }
-  className="flex cursor-pointer items-center gap-3 transition-all duration-300 hover:scale-105"
->
+        <motion.div
+          initial={{
+            opacity: 0,
+            x: -20,
+          }}
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+          transition={{
+            duration: 0.5,
+          }}
+          onClick={() =>
+            window.location.reload()
+          }
+          className="flex cursor-pointer items-center gap-3 transition-all duration-300 hover:scale-105"
+        >
 
-  {/* Logo Box */}
-  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xl font-black text-white shadow-lg shadow-blue-500/20">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-xl font-black text-white shadow-lg shadow-blue-500/20">
 
-    R
+            R
 
-  </div>
+          </div>
 
-  {/* Brand Text */}
-  <div>
+          <div>
 
-    <h1 className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-2xl font-black text-transparent">
-      ReSync
-    </h1>
+            <h1 className="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-xl font-black text-transparent md:text-2xl">
+              ReSync
+            </h1>
 
-    <p className="text-xs tracking-wide text-slate-500">
-      Research Collaboration Platform
-    </p>
+            <p className="hidden text-xs tracking-wide text-slate-500 sm:block">
+              Research Collaboration Platform
+            </p>
 
-  </div>
+          </div>
 
-</motion.div>
+        </motion.div>
 
         {/* Desktop Menu */}
         <ul className="hidden items-center gap-8 font-medium text-slate-700 lg:flex">
@@ -74,7 +164,6 @@ export default function Navbar({
             "Home",
             "About",
             "Features",
-            "Research",
             "Contact",
           ].map((item, index) => (
 
@@ -101,29 +190,35 @@ export default function Navbar({
               </a>
 
             </motion.li>
+
           ))}
 
         </ul>
 
-        {/* Desktop Buttons */}
-        <motion.div
-          initial={{
-            opacity: 0,
-            x: 20,
-          }}
-          animate={{
-            opacity: 1,
-            x: 0,
-          }}
-          transition={{
-            duration: 0.5,
-          }}
-          className="hidden items-center gap-4 lg:flex"
-        >
+        {/* Desktop Right */}
+        <div className="hidden items-center gap-4 lg:flex">
+
+          {/* Theme Button */}
+          <button
+            onClick={
+              toggleTheme
+            }
+            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
+          >
+            {darkMode ? (
+              <FaSun />
+            ) : (
+              <FaMoon />
+            )}
+          </button>
 
           {/* Login */}
           <button
-            onClick={() => onAuthOpen("login")}
+            onClick={() =>
+              onAuthOpen(
+                "login"
+              )
+            }
             className="rounded-xl border border-slate-200 bg-white px-5 py-2 font-medium text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500 hover:shadow-lg"
           >
             Login
@@ -131,23 +226,50 @@ export default function Navbar({
 
           {/* Register */}
           <button
-            onClick={() => onAuthOpen("register")}
+            onClick={() =>
+              onAuthOpen(
+                "register"
+              )
+            }
             className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2 font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/30"
           >
             Register
           </button>
 
-        </motion.div>
+        </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() =>
-            setOpen(!open)
-          }
-          className="text-3xl text-slate-700 transition hover:text-cyan-500 lg:hidden"
-        >
-          {open ? <HiX /> : <HiMenu />}
-        </button>
+        {/* Mobile Right */}
+        <div className="flex items-center gap-3 lg:hidden">
+
+          {/* Theme */}
+          <button
+            onClick={
+              toggleTheme
+            }
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
+          >
+            {darkMode ? (
+              <FaSun />
+            ) : (
+              <FaMoon />
+            )}
+          </button>
+
+          {/* Menu */}
+          <button
+            onClick={() =>
+              setOpen(!open)
+            }
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-3xl text-slate-700 transition hover:border-cyan-500 hover:text-cyan-500"
+          >
+            {open ? (
+              <HiX />
+            ) : (
+              <HiMenu />
+            )}
+          </button>
+
+        </div>
 
       </nav>
 
@@ -159,29 +281,28 @@ export default function Navbar({
           <motion.div
             initial={{
               opacity: 0,
-              y: -20,
+              height: 0,
             }}
             animate={{
               opacity: 1,
-              y: 0,
+              height: "auto",
             }}
             exit={{
               opacity: 0,
-              y: -20,
+              height: 0,
             }}
             transition={{
               duration: 0.3,
             }}
-            className="border-t border-slate-200 bg-white px-6 py-6 shadow-lg lg:hidden"
+            className="absolute left-0 top-full z-[9999] w-full overflow-hidden border-t border-slate-200 bg-white shadow-2xl lg:hidden"
           >
 
-            <div className="flex flex-col gap-5 text-lg font-medium text-slate-700">
+            <div className="flex flex-col gap-5 px-6 py-6 text-lg font-semibold text-slate-800">
 
               {[
                 "Home",
                 "About",
                 "Features",
-                "Research",
                 "Contact",
               ].map((item) => (
 
@@ -191,34 +312,41 @@ export default function Navbar({
                   onClick={() =>
                     setOpen(false)
                   }
-                  className="transition duration-300 hover:text-cyan-500"
+                  className="rounded-xl px-3 py-3 transition-all duration-300 hover:bg-slate-100 hover:text-cyan-500"
                 >
                   {item}
                 </a>
 
               ))}
 
-              {/* Mobile Buttons */}
               <div className="mt-4 flex flex-col gap-4">
 
-                {/* Login */}
                 <button
                   onClick={() => {
+
                     setOpen(false);
-                    onAuthOpen("login");
+
+                    onAuthOpen(
+                      "login"
+                    );
+
                   }}
-                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-center font-medium text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
+                  className="rounded-xl border border-slate-200 bg-white px-5 py-3 font-medium text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500"
                 >
                   Login
                 </button>
 
-                {/* Register */}
                 <button
                   onClick={() => {
+
                     setOpen(false);
-                    onAuthOpen("register");
+
+                    onAuthOpen(
+                      "register"
+                    );
+
                   }}
-                  className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-center font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
+                  className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:scale-[1.02]"
                 >
                   Register
                 </button>

@@ -119,7 +119,7 @@ export default function LoginForm() {
             Password
           </label>
 
-          <div className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 transition-all duration-300 focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
+          <div className="flex items-center overflow-hiddenrounded-2xl border border-slate-200 bg-white px-4 transition-all duration-300 focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
 
             <input
               type={
@@ -153,8 +153,7 @@ onKeyDown={(e) => {
                   !showPassword
                 )
               }
-              className="text-slate-500 transition hover:text-cyan-500"
-            >
+className="flex h-full items-center bg-transparent px-2 text-slate-500 transition hover:text-cyan-500"            >
               {showPassword ? (
                 <FaEyeSlash />
               ) : (
