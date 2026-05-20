@@ -377,6 +377,53 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleFollowingUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: "follow" | "unfollow";
+        userId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail?.action || !detail.userId || detail.userId !== user?.id) {
+        return;
+      }
+
+      setFollowersCount((current) => {
+        if (detail.action === "follow") {
+          return current + 1;
+        }
+
+        if (detail.action === "unfollow") {
+          return Math.max(0, current - 1);
+        }
+
+        return current;
+      });
+      setIsFollowing(detail.action === "follow");
+    };
+
+    const handlePostDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ postId?: string }>;
+      const postId = customEvent.detail?.postId;
+      if (!postId) {
+        return;
+      }
+
+      setPostItems((current) => current.filter((post) => post.id !== postId));
+    };
+
+    window.addEventListener("resync:following-updated", handleFollowingUpdate);
+    window.addEventListener("resync:post-deleted", handlePostDeleted);
+    return () => {
+      window.removeEventListener("resync:following-updated", handleFollowingUpdate);
+      window.removeEventListener("resync:post-deleted", handlePostDeleted);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!avatarPreview?.startsWith("blob:")) {
       return;
     }
@@ -782,6 +829,9 @@ export default function ProfilePage() {
                     saved={savedPosts.some((savedPost) => savedPost.id === post.id)}
                     currentUserId={viewer?.id}
                     isFollowing={!isOwner && isFollowing}
+                    onDeleted={(postId) => {
+                      setPostItems((current) => current.filter((item) => item.id !== postId));
+                    }}
                   />
                 ))}
               </div>

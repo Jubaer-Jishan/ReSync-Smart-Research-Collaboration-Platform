@@ -5,7 +5,7 @@
 - **Authorization**: Bearer token required.
 - **Request Body**:
   - `name` (string): Name of the team.
-  - `ownerId` (UUID): ID of the team owner.
+- **Notes**: The authenticated user is used as the team owner.
 - **Response**: Created team object.
 
 #### POST /teams/:id/members
@@ -15,6 +15,7 @@
   - `userId` (UUID): ID of the user to add.
   - `role` (string): Role of the user in the team.
 - **Response**: 204 No Content.
+- **Frontend hint**: The client now uses `GET /users/search` to pick the user instead of typing IDs manually.
 
 #### DELETE /teams/:id/members/:userId
 - **Description**: Remove a member from a team.
@@ -38,13 +39,16 @@
 ### Apply to Team
 **POST** `/applications/:teamId`
 
+- **Authorization**: Bearer token required.
+
 #### Request Body:
 ```json
 {
-  "applicantId": "string",
   "message": "string"
 }
 ```
+
+- **Notes**: The authenticated user is used as the applicant.
 
 #### Response:
 ```json
@@ -64,14 +68,26 @@
 ### Invite to Team
 **POST** `/invitations/:teamId`
 
+- **Authorization**: Bearer token required.
+
 #### Request Body:
 ```json
 {
-  "inviterId": "string",
   "inviteeId": "string",
   "message": "string"
 }
 ```
+
+- **Notes**: The authenticated user is used as the inviter.
+
+## User Search
+
+### Search Users
+**GET** `/users/search?q=...`
+
+- **Authorization**: Bearer token required.
+- **Purpose**: Powers the frontend team member and invitee selectors.
+- **Response**: Paginated result with `items`, `total`, `page`, and `limit`.
 
 #### Response:
 ```json

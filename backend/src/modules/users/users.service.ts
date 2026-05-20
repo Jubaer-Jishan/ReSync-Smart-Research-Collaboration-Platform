@@ -195,33 +195,49 @@ export class UsersService {
   async searchUsers(query: SearchUsersDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const search = `%${query.q.trim()}%`;
+    const normalizedQuery = typeof query.q === 'string' ? query.q.trim() : '';
 
-    const qb = this.usersRepository
-      .createQueryBuilder('user')
-      .select([
-        'user.id',
-        'user.name',
-        'user.username',
-        'user.profilePictureUrl',
-        'user.bannerImage',
-        'user.role',
-        'user.department',
-        'user.institution',
-        'user.bio',
-        'user.isProfileComplete',
-      ])
-      .where('user.isActive = true')
-      .andWhere(
-        '(user.name ILIKE :search OR user.username ILIKE :search OR user.institution ILIKE :search OR user.department::text ILIKE :search)',
-        { search },
-      )
-      .orderBy('user.name', 'ASC');
+    if (!normalizedQuery) {
+      return { items: [], total: 0, page, limit };
+    }
 
-    qb.skip((page - 1) * limit).take(limit);
+    const escapedQuery = normalizedQuery.replace(/[\\%_]/g, '\\$&').toLowerCase();
+    const search = `%${escapedQuery}%`;
 
-    const [items, total] = await qb.getManyAndCount();
-    return { items, total, page, limit };
+    try {
+      const qb = this.usersRepository
+        .createQueryBuilder('user')
+        .select([
+          'user.id',
+          'user.name',
+          'user.username',
+          'user.profilePictureUrl',
+          'user.bannerImage',
+          'user.role',
+          'user.department',
+          'user.institution',
+          'user.bio',
+          'user.isProfileComplete',
+        ])
+        .where('user.isActive = true')
+        .andWhere(
+          `(
+            LOWER(COALESCE(user.name, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(user.username, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(user.institution, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(CAST(user.department AS text), '')) LIKE :search ESCAPE '\\'
+          )`,
+          { search },
+        )
+        .orderBy('user.name', 'ASC');
+
+      qb.skip((page - 1) * limit).take(limit);
+
+      const [items, total] = await qb.getManyAndCount();
+      return { items, total, page, limit };
+    } catch {
+      return { items: [], total: 0, page, limit };
+    }
   }
 
   async upsertStudentProfile(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfile> {

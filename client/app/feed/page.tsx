@@ -139,12 +139,14 @@ export default function FeedPage() {
         return;
       }
 
+      const userId = detail.userId;
+
       setFollowingUserIds((current) => {
         const next = new Set(current);
         if (detail.action === "follow") {
-          next.add(detail.userId);
+          next.add(userId);
         } else if (detail.action === "unfollow") {
-          next.delete(detail.userId);
+          next.delete(userId);
         }
         return next;
       });
@@ -189,6 +191,28 @@ export default function FeedPage() {
     window.addEventListener("resync:saved-posts-updated", handleSavedUpdate);
     return () => {
       window.removeEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handlePostDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent<{ postId?: string }>;
+      const postId = customEvent.detail?.postId;
+      if (!postId) {
+        return;
+      }
+
+      setPosts((current) => current.filter((post) => post.id !== postId));
+      setSavedPosts((current) => current.filter((post) => post.id !== postId));
+    };
+
+    window.addEventListener("resync:post-deleted", handlePostDeleted);
+    return () => {
+      window.removeEventListener("resync:post-deleted", handlePostDeleted);
     };
   }, []);
 
@@ -334,6 +358,10 @@ export default function FeedPage() {
                       ? followingUserIds.has(post.createdBy.id)
                       : false
                   }
+                  onDeleted={(postId) => {
+                    setPosts((current) => current.filter((item) => item.id !== postId));
+                    setSavedPosts((current) => current.filter((item) => item.id !== postId));
+                  }}
                 />
               ))}
             </div>

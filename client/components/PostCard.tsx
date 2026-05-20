@@ -8,6 +8,7 @@ import {
   HiOutlineHeart,
   HiOutlineBookmark,
   HiOutlineShare,
+  HiOutlineDotsVertical,
 } from "react-icons/hi";
 import {
   likePost,
@@ -16,6 +17,7 @@ import {
   unsavePost,
   followUser,
   unfollowUser,
+  deletePost,
   clearAuth,
   getAccessToken,
   type ResearchPost,
@@ -57,6 +59,7 @@ interface PostCardProps {
   saved?: boolean;
   currentUserId?: string;
   isFollowing?: boolean;
+  onDeleted?: (postId: string) => void;
 }
 
 export default function PostCard({
@@ -65,6 +68,7 @@ export default function PostCard({
   saved = false,
   currentUserId,
   isFollowing: isFollowingProp = false,
+  onDeleted,
 }: PostCardProps) {
   const router = useRouter();
   const [likeCount, setLikeCount] = useState(post.likesCount ?? 0);
@@ -75,17 +79,22 @@ export default function PostCard({
   const [followPending, setFollowPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(isFollowingProp);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const authorName =
     post.createdBy?.fullName ?? post.createdBy?.name ?? "Researcher";
+  const authorUsername = post.createdBy?.username;
   const authorRole = post.createdBy?.role ?? "Collaborator";
   const authorAvatar =
     post.createdBy?.profilePictureUrl ?? post.createdBy?.avatarUrl;
-  const mediaUrl = post.media?.[0]?.url;
+  const mediaItems = post.media ?? [];
+  const mediaFrameClassName =
+    "mt-4 w-full overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 aspect-[16/10]";
   const hasAccessToken = Boolean(getAccessToken());
   const canFollow =
     Boolean(currentUserId) &&
     Boolean(post.createdBy?.id) &&
     post.createdBy?.id !== currentUserId;
+  const canDelete = Boolean(currentUserId) && post.createdBy?.id === currentUserId;
 
   useEffect(() => {
     setLikeCount(post.likesCount ?? 0);
@@ -234,15 +243,152 @@ export default function PostCard({
     }
   };
 
+  const handleOpenProfile = () => {
+    if (!authorUsername) {
+      return;
+    }
+
+    router.push(`/profile/${authorUsername}`);
+  };
+
+  const handleDeletePost = async () => {
+    if (!canDelete || !currentUserId) {
+      return;
+    }
+
+    if (!hasAccessToken) {
+      setActionError("Please sign in to delete posts.");
+      handleUnauthorized();
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this post?");
+    if (!confirmed) {
+      return;
+    }
+
+    setActionError(null);
+    try {
+      await deletePost(post.id);
+      onDeleted?.(post.id);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("resync:post-deleted", {
+            detail: { postId: post.id },
+          }),
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete post";
+      setActionError(message);
+      if (message.toLowerCase().includes("unauthorized")) {
+        handleUnauthorized();
+      }
+    }
+  };
+
+  const renderMediaGrid = () => {
+    if (mediaItems.length === 0) {
+      return null;
+    }
+
+    if (mediaItems.length === 1) {
+      return (
+        <div className={mediaFrameClassName}>
+          <img
+            src={mediaItems[0]?.url}
+            alt={post.title}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      );
+    }
+
+    if (mediaItems.length === 2) {
+      return (
+        <div className={mediaFrameClassName}>
+          <div className="grid h-full grid-cols-2 gap-1">
+            {mediaItems.slice(0, 2).map((media, index) => (
+              <div key={`${media.url}-${index}`} className="overflow-hidden">
+                <img src={media.url} alt={`${post.title} ${index + 1}`} className="h-full w-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (mediaItems.length === 3) {
+      return (
+        <div className={mediaFrameClassName}>
+          <div className="grid h-full grid-cols-2 gap-1">
+            <div className="col-span-1 row-span-2 overflow-hidden">
+              <img src={mediaItems[0]?.url} alt={`${post.title} 1`} className="h-full w-full object-cover" />
+            </div>
+            {mediaItems.slice(1, 3).map((media, index) => (
+              <div key={`${media.url}-${index}`} className="overflow-hidden">
+                <img src={media.url} alt={`${post.title} ${index + 2}`} className="h-full w-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={mediaFrameClassName}>
+        <div className="grid h-full grid-cols-2 gap-1">
+          {mediaItems.slice(0, 4).map((media, index) => (
+            <div key={`${media.url}-${index}`} className="overflow-hidden">
+              <img src={media.url} alt={`${post.title} ${index + 1}`} className="h-full w-full object-cover" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
     >
+      {canDelete ? (
+        <div className="absolute right-4 top-4 z-10">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((current) => !current)}
+            className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+            aria-label="Post options"
+          >
+            <HiOutlineDotsVertical className="text-lg" />
+          </button>
+          {isMenuOpen ? (
+            <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  void handleDeletePost();
+                }}
+                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+              >
+                Delete post
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleOpenProfile}
+          disabled={!authorUsername}
+          className="flex items-center gap-3 text-left disabled:cursor-default"
+        >
           <div className="h-11 w-11 rounded-2xl bg-slate-100 text-sm font-semibold text-slate-600 flex items-center justify-center">
             <UserAvatar
               src={authorAvatar}
@@ -251,12 +397,14 @@ export default function PostCard({
             />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-800">{authorName}</p>
+            <p className="text-sm font-semibold text-slate-800 transition hover:text-blue-600">
+              {authorName}
+            </p>
             <p className="text-xs text-slate-500">
               {authorRole} • {formatTimeAgo(post.createdAt)}
             </p>
           </div>
-        </div>
+        </button>
         {canFollow ? (
           <button
             onClick={handleToggleFollow}
@@ -279,11 +427,7 @@ export default function PostCard({
         </div>
       )}
 
-      {mediaUrl && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
-          <img src={mediaUrl} alt={post.title} className="h-72 w-full object-cover" />
-        </div>
-      )}
+      {renderMediaGrid()}
 
       <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-slate-500">
         <button

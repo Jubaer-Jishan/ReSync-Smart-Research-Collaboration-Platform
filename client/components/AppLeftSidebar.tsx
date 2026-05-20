@@ -176,7 +176,7 @@ export default function AppLeftSidebar({
     initial: { height: 0, opacity: 0 },
     animate: { height: "auto", opacity: 1 },
     exit: { height: 0, opacity: 0 },
-    transition: { duration: 0.25, ease: "easeOut" },
+    transition: { duration: 0.25, ease: "easeOut" as const },
   };
 
   const menuContent = (

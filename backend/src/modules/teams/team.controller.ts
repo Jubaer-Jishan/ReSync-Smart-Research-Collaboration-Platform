@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Delete,
   Patch,
@@ -8,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TeamService } from './team.service';
 
@@ -15,11 +17,18 @@ import { TeamService } from './team.service';
 export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
+  @Get('mine')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  async getMyTeams(@CurrentUser() user: { id: string }) {
+    return this.teamService.getTeamsForUser(user.id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('bearer')
-  async createTeam(@Body('name') name: string, @Body('ownerId') ownerId: string) {
-    return this.teamService.createTeam(name, ownerId);
+  async createTeam(@Body('name') name: string, @CurrentUser() user: { id: string }) {
+    return this.teamService.createTeam(name, user.id);
   }
 
   @Post(':id/members')
