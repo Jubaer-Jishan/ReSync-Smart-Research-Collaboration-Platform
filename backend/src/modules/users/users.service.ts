@@ -8,6 +8,7 @@ import { createHash } from 'crypto';
 import { StudentProfile } from "./entities/student-profile.entity";
 import { TeacherProfile } from "./entities/teacher-profile.entity";
 import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
+import { SearchUsersDto } from "./dto/search-users.dto";
 import { UpdateStudentProfileDto } from "./dto/update-student-profile.dto";
 import { UpdateTeacherProfileDto } from "./dto/update-teacher-profile.dto";
 import { Role } from "./enums/role.enum";
@@ -189,6 +190,38 @@ export class UsersService {
     }
 
     return safeUser;
+  }
+
+  async searchUsers(query: SearchUsersDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const search = `%${query.q.trim()}%`;
+
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.username',
+        'user.profilePictureUrl',
+        'user.bannerImage',
+        'user.role',
+        'user.department',
+        'user.institution',
+        'user.bio',
+        'user.isProfileComplete',
+      ])
+      .where('user.isActive = true')
+      .andWhere(
+        '(user.name ILIKE :search OR user.username ILIKE :search OR user.institution ILIKE :search OR user.department::text ILIKE :search)',
+        { search },
+      )
+      .orderBy('user.name', 'ASC');
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total, page, limit };
   }
 
   async upsertStudentProfile(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfile> {

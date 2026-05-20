@@ -10,6 +10,19 @@ Authorization: Bearer <access_token>
 
 No JSON body. Requires Authorization header.
 
+## GET /users/search
+
+Requires Authorization header.
+
+Query params:
+- q
+- page
+- limit
+
+Example:
+
+GET /users/search?q=farhan&page=1&limit=20
+
 ## PATCH /users/me/profile
 
 {
