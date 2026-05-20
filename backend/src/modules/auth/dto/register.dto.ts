@@ -5,6 +5,8 @@ import {
   MinLength,
   IsEnum,
   Matches,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 
 import { Role } from '../../users/enums/role.enum';
@@ -46,4 +48,8 @@ export class RegisterDto {
   @IsString()
   @MinLength(8)
   confirmPassword!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

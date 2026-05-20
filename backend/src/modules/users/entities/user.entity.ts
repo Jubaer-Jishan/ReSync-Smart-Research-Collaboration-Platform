@@ -7,7 +7,13 @@ import { TeacherProfile } from "./teacher-profile.entity";
 import { Group } from "../../groups/entities/group.entity";
 import { ProjectMember } from "../../projects/entities/project-member.entity";
 import { ResearchPostApplication } from "../../applications/entities/research-post-application.entity";
-
+import { Follow } from './follow.entity';
+import { TeamMember } from '../../teams/entities/team-member.entity';
+import { Application } from '../../teams/entities/application.entity';
+import { Invitation } from '../../teams/entities/invitation.entity';
+import { Like } from '../../posts/entities/like.entity';
+import { Comment } from '../../posts/entities/comment.entity';
+import { Share } from '../../posts/entities/share.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -103,6 +109,9 @@ export class User extends BaseEntity {
     @Column({ nullable: true, type: 'text' })
     refreshToken?: string;
 
+    @Column({ default: false })
+    refreshTokenRememberMe!: boolean;
+
     @Column({ nullable: true })
     lastLoginAt?: Date;
 
@@ -147,4 +156,30 @@ export class User extends BaseEntity {
     @OneToMany(() => ResearchPostApplication, (application) => application.user)
     researchPostApplications?: ResearchPostApplication[];
 
+    @OneToMany(() => Follow, (follow) => follow.follower)
+    following: Follow[];
+
+    @OneToMany(() => Follow, (follow) => follow.following)
+    followers: Follow[];
+
+    @OneToMany(() => TeamMember, (teamMember) => teamMember.user)
+    teamMemberships: TeamMember[];
+
+    @OneToMany(() => Application, (application) => application.applicant)
+    applications: Application[];
+
+    @OneToMany(() => Invitation, (invitation) => invitation.inviter)
+    sentInvitations: Invitation[];
+
+    @OneToMany(() => Invitation, (invitation) => invitation.invitee)
+    receivedInvitations: Invitation[];
+
+    @OneToMany(() => Like, (like) => like.user)
+    likes: Like[];
+
+    @OneToMany(() => Comment, (comment) => comment.user)
+    comments: Comment[];
+
+    @OneToMany(() => Share, (share) => share.user)
+    shares: Share[];
 }

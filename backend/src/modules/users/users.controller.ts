@@ -4,6 +4,7 @@ import {
 	Controller,
 	Get,
 	Patch,
+	Query,
 	UploadedFile,
 	UseGuards,
 	UseInterceptors,
@@ -19,6 +20,7 @@ import { Role } from "./enums/role.enum";
 import { UpdateStudentProfileDto } from "./dto/update-student-profile.dto";
 import { UpdateTeacherProfileDto } from "./dto/update-teacher-profile.dto";
 import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
+import { SearchUsersDto } from "./dto/search-users.dto";
 import { UsersService } from "./users.service";
 import { UsersMediaService } from "./users-media.service";
 
@@ -36,6 +38,13 @@ export class UsersController {
 	@ApiBearerAuth('bearer')
 	getMe(@CurrentUser() user: { id: string }) {
 		return this.usersService.getUserProfileById(user.id);
+	}
+
+	@Get('search')
+	@UseGuards(JwtAuthGuard)
+	@ApiBearerAuth('bearer')
+	searchUsers(@Query() query: SearchUsersDto) {
+		return this.usersService.searchUsers(query);
 	}
 
 	@Patch('me/profile')

@@ -37,3 +37,23 @@ No JSON body. Requires Authorization header.
 ## DELETE /projects/:id/leave
 
 No JSON body. Requires Authorization header.
+
+## Post Save API
+
+### Save Post
+**POST** `/posts/save`
+
+#### Request Body:
+```json
+{
+  "userId": "string",
+  "postId": "string"
+}
+```
+
+#### Response:
+```json
+{
+  "message": "Post saved successfully"
+}
+```

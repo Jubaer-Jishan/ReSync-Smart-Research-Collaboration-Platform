@@ -17,6 +17,9 @@ import { ResearchStage } from '../enums/research-stage.enum';
 import { PostMedia } from './post-media.entity';
 import { PostResearchInterest } from './post-research-interest.entity';
 import { ResearchPostApplication } from '../../applications/entities/research-post-application.entity';
+import { Like } from '../../posts/entities/like.entity';
+import { Comment } from '../../posts/entities/comment.entity';
+import { Share } from '../../posts/entities/share.entity';
 
 @Entity('research_posts')
 @Index(['status', 'deadline'])
@@ -116,4 +119,13 @@ export class ResearchPost extends BaseEntity {
     (application) => application.post,
   )
   applications?: ResearchPostApplication[];
+
+  @OneToMany(() => Like, (like) => like.post)
+  likes?: Like[];
+
+  @OneToMany(() => Comment, (comment) => comment.post)
+  comments?: Comment[];
+
+  @OneToMany(() => Share, (share) => share.post)
+  shares?: Share[];
 }

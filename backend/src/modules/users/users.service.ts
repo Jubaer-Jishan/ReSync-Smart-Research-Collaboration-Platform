@@ -4,12 +4,15 @@ import { Repository } from "typeorm";
 import { User } from "./entities/user.entity";
 import { RegisterDto } from "../auth/dto/register.dto";
 import * as bcrypt from "bcrypt";
+import { createHash } from 'crypto';
 import { StudentProfile } from "./entities/student-profile.entity";
 import { TeacherProfile } from "./entities/teacher-profile.entity";
 import { UpdateUserProfileDto } from "./dto/update-user-profile.dto";
+import { SearchUsersDto } from "./dto/search-users.dto";
 import { UpdateStudentProfileDto } from "./dto/update-student-profile.dto";
 import { UpdateTeacherProfileDto } from "./dto/update-teacher-profile.dto";
 import { Role } from "./enums/role.enum";
+import { FollowService } from './follow.service';
 
 @Injectable()
 export class UsersService {
@@ -20,6 +23,7 @@ export class UsersService {
     private readonly studentProfilesRepository: Repository<StudentProfile>,
     @InjectRepository(TeacherProfile)
     private readonly teacherProfilesRepository: Repository<TeacherProfile>,
+    private readonly followService: FollowService,
   ) {}
 
   async createUser(registerDto: RegisterDto): Promise<User> {
@@ -54,8 +58,14 @@ export class UsersService {
     //create new user
 
     const user = this.usersRepository.create({
-        ...registerDto,
-        password: hashedPassword,
+      username,
+      email,
+      password: hashedPassword,
+      name: registerDto.name,
+      institution: registerDto.institution,
+      department: registerDto.department,
+      phoneNumber: registerDto.phoneNumber,
+      role: registerDto.role,
     });
 
     //remove confirmPassword from user object before saving to database
@@ -86,11 +96,62 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersRepository.update(
       { id },
-      { password: hashedPassword, passwordChangedAt: new Date() },
+      {
+        password: hashedPassword,
+        passwordChangedAt: new Date(),
+        refreshToken: null as unknown as string,
+        refreshTokenRememberMe: false,
+      },
     );
   }
 
-  async updateUserProfile(userId: string, dto: UpdateUserProfileDto): Promise<Omit<User, 'password' | 'refreshToken'>> {
+  async setRefreshToken(
+    id: string,
+    refreshToken: string,
+    rememberMe: boolean,
+  ): Promise<void> {
+    const hashedRefreshToken = this.hashToken(refreshToken);
+    await this.usersRepository.update(
+      { id },
+      {
+        refreshToken: hashedRefreshToken,
+        refreshTokenRememberMe: rememberMe,
+      },
+    );
+  }
+
+  async clearRefreshToken(id: string): Promise<void> {
+    await this.usersRepository.update(
+      { id },
+      {
+        refreshToken: null as unknown as string,
+        refreshTokenRememberMe: false,
+      },
+    );
+  }
+
+  async validateRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<User | null> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user?.refreshToken) {
+      return null;
+    }
+
+    const hashedRefreshToken = this.hashToken(refreshToken);
+    if (user.refreshToken !== hashedRefreshToken) {
+      return null;
+    }
+
+    return user;
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  async updateUserProfile(userId: string, dto: UpdateUserProfileDto): Promise<Omit<User, 'password' | 'refreshToken' | 'refreshTokenRememberMe'>> {
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -100,11 +161,11 @@ export class UsersService {
     const saved = await this.usersRepository.save(user);
     await this.recomputeProfileCompletion(userId);
 
-    const { password, refreshToken, ...safeUser } = saved;
+    const { password, refreshToken, refreshTokenRememberMe, ...safeUser } = saved;
     return safeUser;
   }
 
-  async getUserProfileById(userId: string): Promise<Omit<User, 'password' | 'refreshToken'>> {
+  async getUserProfileById(userId: string): Promise<Omit<User, 'password' | 'refreshToken' | 'refreshTokenRememberMe'>> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
       relations: {
@@ -117,7 +178,7 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const { password, refreshToken, ...safeUser } = user;
+    const { password, refreshToken, refreshTokenRememberMe, ...safeUser } = user;
 
     if (safeUser.role === Role.STUDENT) {
       delete (safeUser as Partial<User>).teacherProfile;
@@ -129,6 +190,38 @@ export class UsersService {
     }
 
     return safeUser;
+  }
+
+  async searchUsers(query: SearchUsersDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const search = `%${query.q.trim()}%`;
+
+    const qb = this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.name',
+        'user.username',
+        'user.profilePictureUrl',
+        'user.bannerImage',
+        'user.role',
+        'user.department',
+        'user.institution',
+        'user.bio',
+        'user.isProfileComplete',
+      ])
+      .where('user.isActive = true')
+      .andWhere(
+        '(user.name ILIKE :search OR user.username ILIKE :search OR user.institution ILIKE :search OR user.department::text ILIKE :search)',
+        { search },
+      )
+      .orderBy('user.name', 'ASC');
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total, page, limit };
   }
 
   async upsertStudentProfile(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfile> {
@@ -319,5 +412,27 @@ export class UsersService {
     }
 
     return true;
+  }
+
+  async getProfile(currentUserId: string, profileUserId: string) {
+    const user = await this.usersRepository.findOne({ where: { id: profileUserId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const followersCount = await this.followService.getFollowers(profileUserId).then((f) => f.length);
+    const followingCount = await this.followService.getFollowing(profileUserId).then((f) => f.length);
+    const isFollowing = await this.followService
+      .getFollowers(profileUserId)
+      .then((followers) => followers.some((f) => f.id === currentUserId));
+
+    return {
+      user,
+      followersCount,
+      followingCount,
+      isFollowing,
+      isOwner: currentUserId === profileUserId,
+    };
   }
 }

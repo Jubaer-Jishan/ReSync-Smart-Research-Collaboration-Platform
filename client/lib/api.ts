@@ -326,6 +326,7 @@ export function clearAuth(): void {
 export async function login(input: LoginInput): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -425,6 +426,7 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit) {
 
   return fetch(input, {
     ...init,
+    credentials: "include",
     headers: {
       ...(init?.headers ?? {}),
       Authorization: `Bearer ${token}`,

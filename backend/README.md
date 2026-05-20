@@ -24,7 +24,7 @@ Scalable NestJS backend for the ReSync research collaboration platform.
 copy .env.example .env
 ```
 
-2. Update `JWT_SECRET` and database values in `.env`
+2. Update `JWT_SECRET`, `JWT_REFRESH_SECRET`, and database values in `.env`
 3. Start PostgreSQL
 4. Run the API
 
@@ -48,12 +48,15 @@ Swagger UI is available at `/api/docs`.
 - `DB_SYNCHRONIZE` (use `true` only in development)
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
+- `JWT_REFRESH_SECRET`
+- `JWT_REFRESH_EXPIRES_IN`
 
 ## Key Endpoints
 
 Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
 
 Users (JWT + RBAC)
 - `GET /api/users`
