@@ -45,6 +45,30 @@ export class TeamService {
     return savedTeam;
   }
 
+  async getTeamsForUser(userId: string): Promise<Team[]> {
+    const teamMembers = await this.teamMemberRepository.find({
+      where: { user: { id: userId } },
+      relations: { team: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    const teamIds = teamMembers
+      .map((teamMember) => teamMember.team?.id)
+      .filter((teamId): teamId is string => Boolean(teamId));
+
+    if (teamIds.length === 0) {
+      return [];
+    }
+
+    return this.teamRepository
+      .createQueryBuilder('team')
+      .leftJoinAndSelect('team.members', 'members')
+      .leftJoinAndSelect('members.user', 'memberUser')
+      .where('team.id IN (:...teamIds)', { teamIds })
+      .orderBy('team.createdAt', 'DESC')
+      .getMany();
+  }
+
   async addMember(teamId: string, userId: string, role: string): Promise<void> {
     const team = await this.teamRepository.findOne({ where: { id: teamId } });
     if (!team) {

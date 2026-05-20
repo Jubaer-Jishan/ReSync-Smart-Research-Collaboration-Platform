@@ -6,6 +6,8 @@ import {
   useEffect,
 } from "react";
 
+import { useRouter } from "next/navigation";
+
 import { motion } from "framer-motion";
 
 import { isValidPhoneNumber } from "libphonenumber-js";
@@ -20,6 +22,7 @@ import {
   FaUser,
   FaUniversity,
 } from "react-icons/fa";
+import { register } from "../lib/api";
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -28,6 +31,7 @@ interface RegisterFormProps {
 export default function RegisterForm({
   onSuccess,
 }: RegisterFormProps) {
+  const router = useRouter();
 
   const usernameRef =
     useRef<HTMLInputElement>(null);
@@ -66,6 +70,13 @@ export default function RegisterForm({
 
   const [phone, setPhone] =
     useState("");
+
+  const [submitting, setSubmitting] =
+    useState(false);
+  const [formError, setFormError] =
+    useState<string | null>(null);
+  const [formSuccess, setFormSuccess] =
+    useState<string | null>(null);
 
   const isPhoneValid =
     phone
@@ -122,6 +133,20 @@ export default function RegisterForm({
   const passwordsMatch =
     formData.password ===
     formData.confirmPassword;
+
+  const roleMap: Record<string, string> = {
+    student: "STUDENT",
+    researcher: "RESEARCHER",
+    supervisor: "TEACHER",
+  };
+
+  const normalizedPhone = phone
+    ? phone.startsWith("+880")
+      ? `0${phone.slice(4)}`
+      : phone
+    : "";
+  const sanitizedPhone = normalizedPhone.replace(/[^\d]/g, "");
+  const isBdPhoneValid = /^01\d{9}$/.test(sanitizedPhone);
 const generateStrongPassword =
   () => {
 
@@ -169,19 +194,103 @@ const generateStrongPassword =
       {/* Form */}
       <form
         onSubmit={(e) => {
-
           e.preventDefault();
-
-          alert(
-            "Account created successfully 😄🔥"
-          );
-
-          if (onSuccess) {
-            onSuccess();
+          if (submitting) {
+            return;
           }
 
+          setFormError(null);
+          setFormSuccess(null);
+
+          if (!formData.name.trim()) {
+            setFormError("Full name is required.");
+            return;
+          }
+
+          if (!formData.username.trim()) {
+            setFormError("Username is required.");
+            return;
+          }
+
+          if (!isValidEmail) {
+            setFormError("Enter a valid email address.");
+            return;
+          }
+
+          if (!formData.institution.trim()) {
+            setFormError("Institution is required.");
+            return;
+          }
+
+          if (!isPhoneValid || !isBdPhoneValid) {
+            setFormError("Enter a valid Bangladeshi phone number.");
+            return;
+          }
+
+          if (!formData.department) {
+            setFormError("Select a department.");
+            return;
+          }
+
+          const apiRole = roleMap[formData.role];
+          if (!apiRole) {
+            setFormError("Select a role.");
+            return;
+          }
+
+          if (!isValidPassword) {
+            setFormError("Password does not meet requirements.");
+            return;
+          }
+
+          if (!passwordsMatch) {
+            setFormError("Passwords do not match.");
+            return;
+          }
+
+          setSubmitting(true);
+          register({
+            name: formData.name.trim(),
+            username: formData.username.trim(),
+            email: formData.email.trim(),
+            institution: formData.institution.trim(),
+            department: formData.department,
+            phoneNumber: sanitizedPhone,
+            role: apiRole,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword,
+          })
+            .then(() => {
+              setFormSuccess("Account created successfully.");
+              if (onSuccess) {
+                onSuccess();
+                return;
+              }
+
+              router.push("/feed");
+            })
+            .catch((registerError) => {
+              const message =
+                registerError instanceof Error
+                  ? registerError.message
+                  : "Registration failed";
+              setFormError(message);
+            })
+            .finally(() => {
+              setSubmitting(false);
+            });
         }}
       >
+        {formError && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            {formError}
+          </div>
+        )}
+        {formSuccess && (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-600">
+            {formSuccess}
+          </div>
+        )}
         {/* Full Name */}
         <div>
 
@@ -408,15 +517,15 @@ onKeyDown={(e) => {
       Select department
     </option>
 
-    <option value="CSE">
+    <option value="Computer Science and Engineering">
       CSE — Computer Science and Engineering
     </option>
 
-    <option value="EEE">
+    <option value="Electrical and Electronic Engineering">
       EEE — Electrical and Electronic Engineering
     </option>
 
-    <option value="BBA">
+    <option value="Business Administration">
       BBA — Business Administration
     </option>
 
@@ -424,7 +533,7 @@ onKeyDown={(e) => {
       English — Department of English
     </option>
 
-    <option value="LAW">
+    <option value="Law">
       LAW — Department of Law
     </option>
 

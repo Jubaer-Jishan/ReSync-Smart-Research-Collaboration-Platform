@@ -118,7 +118,7 @@ export default function AuthModal({
               {isLogin ? (
                 <LoginForm />
               ) : (
-                <RegisterForm />
+                <RegisterForm onSuccess={onClose} />
               )}
 
             </div>
