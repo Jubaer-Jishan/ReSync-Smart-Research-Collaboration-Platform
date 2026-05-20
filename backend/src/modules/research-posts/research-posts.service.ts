@@ -179,10 +179,13 @@ export class ResearchPostsService {
     }
 
     const orderedIds = posts.map((post) => post.id);
-    const loadedPosts = await this.postsRepository.find({
-      where: { id: In(orderedIds) },
-      relations: ['createdBy', 'media'],
-    });
+    const loadedPosts = await this.postsRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.createdBy', 'createdBy')
+      .leftJoinAndSelect('post.media', 'media')
+      .loadRelationCountAndMap('post.likesCount', 'post.likes')
+      .where('post.id IN (:...ids)', { ids: orderedIds })
+      .getMany();
 
     const loadedPostMap = new Map(loadedPosts.map((post) => [post.id, post]));
     const items = orderedIds

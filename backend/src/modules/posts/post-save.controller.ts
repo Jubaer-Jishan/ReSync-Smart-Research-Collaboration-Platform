@@ -1,4 +1,4 @@
-import { Controller, Delete, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -26,5 +26,12 @@ export class PostSaveController {
     @Param('postId') postId: string,
   ) {
     return this.postSaveService.unsavePost(user.id, postId);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  getMySavedPosts(@CurrentUser() user: { id: string }) {
+    return this.postSaveService.getSavedPosts(user.id);
   }
 }

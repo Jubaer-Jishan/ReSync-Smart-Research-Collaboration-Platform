@@ -6,6 +6,7 @@ import { TeacherProfile } from "./entities/teacher-profile.entity";
 import { User } from "./entities/user.entity";
 import { Follow } from "./entities/follow.entity";
 import { UsersController } from "./users.controller";
+import { FollowController } from "./follow.controller";
 import { UsersService } from "./users.service";
 import { UsersMediaService } from "./users-media.service";
 import { FollowService } from "./follow.service";
@@ -15,7 +16,7 @@ import { FollowService } from "./follow.service";
 		TypeOrmModule.forFeature([User, StudentProfile, TeacherProfile, Follow]),
 		StorageModule,
 	],
-	controllers: [UsersController],
+	controllers: [UsersController, FollowController],
 	providers: [UsersService, UsersMediaService, FollowService],
 	exports: [TypeOrmModule, UsersService, FollowService],
 })

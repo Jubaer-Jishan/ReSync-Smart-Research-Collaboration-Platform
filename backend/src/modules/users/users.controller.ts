@@ -4,6 +4,7 @@ import {
 	Controller,
 	Get,
 	Patch,
+	Param,
 	Query,
 	UploadedFile,
 	UseGuards,
@@ -38,6 +39,16 @@ export class UsersController {
 	@ApiBearerAuth('bearer')
 	getMe(@CurrentUser() user: { id: string }) {
 		return this.usersService.getUserProfileById(user.id);
+	}
+
+	@Get('profile/:username')
+	@UseGuards(JwtAuthGuard)
+	@ApiBearerAuth('bearer')
+	getProfileByUsername(
+		@CurrentUser() user: { id: string },
+		@Param('username') username: string,
+	) {
+		return this.usersService.getProfileByUsername(user.id, username);
 	}
 
 	@Get('search')

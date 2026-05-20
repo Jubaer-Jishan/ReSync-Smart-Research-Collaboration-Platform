@@ -51,4 +51,14 @@ export class PostSaveService {
     await this.savedPostRepository.remove(savedPost);
     return { success: true };
   }
+
+  async getSavedPosts(userId: string): Promise<ResearchPost[]> {
+    const savedPosts = await this.savedPostRepository.find({
+      where: { user: { id: userId } },
+      relations: ['post', 'post.createdBy', 'post.media'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return savedPosts.map((savedPost) => savedPost.post);
+  }
 }

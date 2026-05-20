@@ -15,6 +15,7 @@ import {
   HiOutlineX,
 } from "react-icons/hi";
 import { AnimatePresence, motion } from "framer-motion";
+import { fetchMySavedPosts, type ResearchPost } from "../lib/api";
 import UserAvatar from "./UserAvatar";
 
 interface AppLeftSidebarProps {
@@ -22,6 +23,7 @@ interface AppLeftSidebarProps {
   userRole?: string;
   avatarUrl?: string;
   onChangePassword?: () => void;
+  savedPosts?: ResearchPost[];
 }
 
 export default function AppLeftSidebar({
@@ -29,6 +31,7 @@ export default function AppLeftSidebar({
   userRole = "",
   avatarUrl,
   onChangePassword,
+  savedPosts: savedPostsProp = [],
 }: AppLeftSidebarProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -39,6 +42,7 @@ export default function AppLeftSidebar({
   const [savedOpen, setSavedOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  const [savedPosts, setSavedPosts] = useState<ResearchPost[]>(savedPostsProp);
 
   const hasUserData = Boolean(userName || userRole || avatarUrl);
   const displayName = useMemo(
@@ -89,6 +93,66 @@ export default function AppLeftSidebar({
     } catch {
       setSelectedItem(null);
     }
+  }, []);
+
+  useEffect(() => {
+    setSavedPosts(savedPostsProp);
+  }, [savedPostsProp]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleSavedUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: "save" | "unsave";
+        post?: ResearchPost;
+        postId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail?.action) {
+        return;
+      }
+
+      setSavedPosts((current) => {
+        if (detail.action === "save" && detail.post?.id) {
+          const exists = current.some((item) => item.id === detail.post?.id);
+          return exists ? current : [detail.post, ...current];
+        }
+
+        if (detail.action === "unsave" && detail.postId) {
+          return current.filter((item) => item.id !== detail.postId);
+        }
+
+        return current;
+      });
+    };
+
+    window.addEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    return () => {
+      window.removeEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    fetchMySavedPosts()
+      .then((posts) => {
+        if (!ignore) {
+          setSavedPosts(posts);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setSavedPosts([]);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const handleToggleDarkMode = () => {
@@ -197,7 +261,14 @@ export default function AppLeftSidebar({
                 {...animationConfig}
                 className="overflow-hidden"
               >
-                <div className="ml-[2%] flex flex-col gap-2 border-l border-slate-200/70 py-2 pl-4" />
+                <div className="ml-[2%] flex flex-col gap-2 border-l border-slate-200/70 py-2 pl-4">
+                  <button
+                    onClick={() => router.push("/teams")}
+                    className="relative flex items-center rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-slate-100 before:absolute before:left-0 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-slate-200/70"
+                  >
+                    Manage Teams
+                  </button>
+                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -267,7 +338,20 @@ export default function AppLeftSidebar({
                 {...animationConfig}
                 className="overflow-hidden"
               >
-                <div className="ml-[2%] flex flex-col gap-2 border-l border-slate-200/70 py-2 pl-4" />
+                <div className="ml-[2%] flex flex-col gap-2 border-l border-slate-200/70 py-2 pl-4">
+                  {savedPosts.length === 0 ? (
+                    <p className="px-3 text-xs text-slate-400">No saved posts yet.</p>
+                  ) : (
+                    savedPosts.slice(0, 5).map((post) => (
+                      <div key={post.id} className="rounded-xl bg-slate-50 px-3 py-2">
+                        <p className="line-clamp-1 text-xs font-semibold text-slate-700">{post.title}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {post.createdBy?.fullName ?? post.createdBy?.name ?? "Researcher"}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -353,9 +437,6 @@ export default function AppLeftSidebar({
             <p className="text-xs text-slate-500">{displayRole}</p>
           </div>
         </div>
-        <button className="mt-4 w-full rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50">
-          View Profile
-        </button>
       </div>
     </div>
   );
@@ -370,7 +451,7 @@ export default function AppLeftSidebar({
         <HiOutlineMenu className="text-xl" />
       </button>
 
-      <aside className="hidden h-fit w-full max-w-[240px] flex-col gap-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:flex">
+      <aside className="hidden h-[calc(100vh-6rem)] w-full max-w-[240px] flex-col gap-6 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:fixed lg:left-4 lg:top-24 lg:flex">
         {menuContent}
       </aside>
 
