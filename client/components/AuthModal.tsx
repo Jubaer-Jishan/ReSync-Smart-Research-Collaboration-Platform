@@ -5,10 +5,7 @@ import {
   AnimatePresence,
 } from "framer-motion";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
@@ -26,42 +23,12 @@ export default function AuthModal({
 }: AuthModalProps) {
 
   const [isLogin, setIsLogin] =
-    useState(
-      initialMode === "login"
-    );
+    useState(initialMode === "login");
 
-  /* Prevent Background Scroll */
   useEffect(() => {
-
     if (isOpen) {
-
-      document.body.style.overflow =
-        "hidden";
-
-    } else {
-
-      document.body.style.overflow =
-        "auto";
+      setIsLogin(initialMode === "login");
     }
-
-    return () => {
-
-      document.body.style.overflow =
-        "auto";
-    };
-
-  }, [isOpen]);
-
-  /* Set Initial Mode */
-  useEffect(() => {
-
-    if (isOpen) {
-
-      setIsLogin(
-        initialMode === "login"
-      );
-    }
-
   }, [initialMode, isOpen]);
 
   return (
@@ -80,7 +47,7 @@ export default function AuthModal({
           exit={{
             opacity: 0,
           }}
-          className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/50 px-4 pt-20 backdrop-blur-md"
+          className="fixed inset-0 z-[999] flex items-start justify-center overflow-y-auto bg-black/50 px-4 pt-6 backdrop-blur-md"
         >
 
           {/* Modal Box */}
@@ -109,7 +76,7 @@ export default function AuthModal({
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute right-5 top-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white transition-all duration-300 hover:scale-110"
+              className="absolute right-5 top-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-700 transition-all duration-300 hover:bg-red-500 hover:text-white"
             >
               ✕
             </button>

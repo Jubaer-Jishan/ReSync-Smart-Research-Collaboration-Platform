@@ -39,16 +39,20 @@ export default function Hero({
       </p>
 
       {/* Buttons */}
-      <div className="mt-10 flex justify-center">
+      <div className="mt-10 flex flex-wrap justify-center gap-5">
 
-  <button 
-    onClick={onRegisterClick}
-    className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-cyan-500/30 transition hover:scale-105"
-  >
-    Get Started
-  </button>
+        <button
+          onClick={onRegisterClick}
+          className="rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-lg font-semibold text-white shadow-xl shadow-cyan-500/30 transition-all duration-300 hover:scale-105"
+        >
+          Get Started
+        </button>
 
-</div>
+        <button className="rounded-2xl border border-slate-300 px-8 py-4 text-lg font-semibold text-slate-700 transition-all duration-300 hover:border-cyan-500 hover:text-cyan-500 hover:shadow-lg">
+          Explore Research
+        </button>
+
+      </div>
 
     </div>
   );
