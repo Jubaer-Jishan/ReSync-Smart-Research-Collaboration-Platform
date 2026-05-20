@@ -86,15 +86,15 @@ export default function LandingPage() {
 
         </section>
 
-        {/* About */}
-<section id="about">
-  <About />
-</section>
+        {/* Features */}
+        <section id="features">
+          <Features />
+        </section>
 
-{/* Features */}
-<section id="features">
-  <Features />
-</section>
+        {/* About */}
+        <section id="about">
+          <About />
+        </section>
 
         {/* Stats */}
         <section id="research">

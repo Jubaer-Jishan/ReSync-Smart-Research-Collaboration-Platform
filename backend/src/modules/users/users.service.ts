@@ -195,33 +195,49 @@ export class UsersService {
   async searchUsers(query: SearchUsersDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const search = `%${query.q.trim()}%`;
+    const normalizedQuery = typeof query.q === 'string' ? query.q.trim() : '';
 
-    const qb = this.usersRepository
-      .createQueryBuilder('user')
-      .select([
-        'user.id',
-        'user.name',
-        'user.username',
-        'user.profilePictureUrl',
-        'user.bannerImage',
-        'user.role',
-        'user.department',
-        'user.institution',
-        'user.bio',
-        'user.isProfileComplete',
-      ])
-      .where('user.isActive = true')
-      .andWhere(
-        '(user.name ILIKE :search OR user.username ILIKE :search OR user.institution ILIKE :search OR user.department::text ILIKE :search)',
-        { search },
-      )
-      .orderBy('user.name', 'ASC');
+    if (!normalizedQuery) {
+      return { items: [], total: 0, page, limit };
+    }
 
-    qb.skip((page - 1) * limit).take(limit);
+    const escapedQuery = normalizedQuery.replace(/[\\%_]/g, '\\$&').toLowerCase();
+    const search = `%${escapedQuery}%`;
 
-    const [items, total] = await qb.getManyAndCount();
-    return { items, total, page, limit };
+    try {
+      const qb = this.usersRepository
+        .createQueryBuilder('user')
+        .select([
+          'user.id',
+          'user.name',
+          'user.username',
+          'user.profilePictureUrl',
+          'user.bannerImage',
+          'user.role',
+          'user.department',
+          'user.institution',
+          'user.bio',
+          'user.isProfileComplete',
+        ])
+        .where('user.isActive = true')
+        .andWhere(
+          `(
+            LOWER(COALESCE(user.name, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(user.username, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(user.institution, '')) LIKE :search ESCAPE '\\'
+            OR LOWER(COALESCE(CAST(user.department AS text), '')) LIKE :search ESCAPE '\\'
+          )`,
+          { search },
+        )
+        .orderBy('user.name', 'ASC');
+
+      qb.skip((page - 1) * limit).take(limit);
+
+      const [items, total] = await qb.getManyAndCount();
+      return { items, total, page, limit };
+    } catch {
+      return { items: [], total: 0, page, limit };
+    }
   }
 
   async upsertStudentProfile(userId: string, dto: UpdateStudentProfileDto): Promise<StudentProfile> {
@@ -433,6 +449,39 @@ export class UsersService {
       followingCount,
       isFollowing,
       isOwner: currentUserId === profileUserId,
+    };
+  }
+
+  async getProfileByUsername(currentUserId: string, username: string) {
+    const profileUser = await this.usersRepository.findOne({
+      where: { username },
+      relations: {
+        studentProfile: true,
+        teacherProfile: true,
+      },
+    });
+
+    if (!profileUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const safeUser = await this.getUserProfileById(profileUser.id);
+    const followersCount = await this.followService
+      .getFollowers(profileUser.id)
+      .then((followers) => followers.length);
+    const followingCount = await this.followService
+      .getFollowing(profileUser.id)
+      .then((following) => following.length);
+    const isFollowing = await this.followService
+      .getFollowers(profileUser.id)
+      .then((followers) => followers.some((f) => f.id === currentUserId));
+
+    return {
+      user: safeUser,
+      followersCount,
+      followingCount,
+      isFollowing,
+      isOwner: currentUserId === profileUser.id,
     };
   }
 }

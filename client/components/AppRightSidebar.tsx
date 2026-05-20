@@ -32,7 +32,7 @@ interface AppRightSidebarProps {
 
 export default function AppRightSidebar({ topSlot }: AppRightSidebarProps) {
   return (
-    <aside className="hidden h-fit w-full max-w-[280px] flex-col gap-5 lg:flex">
+    <aside className="hidden h-[calc(100vh-6rem)] w-full max-w-[280px] flex-col gap-5 overflow-y-auto lg:fixed lg:right-4 lg:top-24 lg:flex">
       {topSlot}
       <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between">

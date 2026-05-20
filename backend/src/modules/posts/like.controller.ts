@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Param,
   Post,
   UseGuards,
@@ -41,5 +42,12 @@ export class LikeController {
     @CurrentUser() user: { id: string },
   ) {
     return this.likeService.unlikePost(user.id, postId);
+  }
+
+  @Get('me/likes')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
+  getMyLikedPosts(@CurrentUser() user: { id: string }) {
+    return this.likeService.getLikedPosts(user.id);
   }
 }

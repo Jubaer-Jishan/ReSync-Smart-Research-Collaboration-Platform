@@ -578,41 +578,50 @@ export default function ForgotPasswordModal({
                 <div className="flex items-center rounded-2xl border border-slate-200 bg-white px-4 transition-all duration-300 focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
 
   <input
-  type={
-    showConfirmPassword
-      ? "text"
-      : "password"
-  }
-  value={confirmPassword}
-  onChange={(e) =>
-    setConfirmPassword(
-      e.target.value
-    )
-  }
-  onKeyDown={(e) => {
-
-    if (
-      e.key === "Enter"
-    ) {
-
-      e.preventDefault();
+    type={
+      showConfirmPassword
+        ? "text"
+        : "password"
+    }
+    value={confirmPassword}
+    onChange={(e) =>
+      setConfirmPassword(
+        e.target.value
+      )
+    }
+    placeholder="Confirm password"
+    onKeyDown={(e) => {
 
       if (
-        passwordsMatch &&
-        isValidPassword
+        e.key === "Enter"
       ) {
 
-        alert(
-          "Password changed successfully 😄🔥"
-        );
+        e.preventDefault();
 
-        onClose();
+        if (
+          passwordsMatch &&
+          isValidPassword
+        ) {
+
+          void handleResetPassword();
+
+        } else {
+
+          setResetShake(
+            true
+          );
+
+          setTimeout(() => {
+            setResetShake(
+              false
+            );
+          }, 500);
+
+        }
       }
-    }
-  }}
-  placeholder="Confirm password"
-  className="w-full bg-transparent py-4 text-slate-900 outline-none"
-/>
+    }}
+    className="w-full bg-transparent py-4 text-slate-900 outline-none"
+  />
 
   <button
     type="button"

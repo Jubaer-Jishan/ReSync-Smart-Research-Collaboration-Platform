@@ -51,4 +51,14 @@ export class LikeService {
     await this.likeRepository.remove(like);
     return { success: true };
   }
+
+  async getLikedPosts(userId: string): Promise<ResearchPost[]> {
+    const likes = await this.likeRepository.find({
+      where: { user: { id: userId } },
+      relations: ['post', 'post.createdBy', 'post.media'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return likes.map((like) => like.post);
+  }
 }

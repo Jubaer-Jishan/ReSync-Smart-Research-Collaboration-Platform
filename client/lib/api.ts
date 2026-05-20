@@ -12,6 +12,7 @@ export type PostMedia = {
 
 export type PostUser = {
   id?: string;
+  username?: string;
   fullName?: string;
   name?: string;
   email?: string;
@@ -76,6 +77,7 @@ export type ResearchPost = {
   title: string;
   description: string;
   createdAt?: string;
+  likesCount?: number;
   researchDomain?: string;
   collaborationType?: string;
   department?: string;
@@ -89,6 +91,48 @@ export type ResearchPost = {
 
 export type PaginatedPosts = {
   items: ResearchPost[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+export type PostListResponse = ResearchPost[];
+
+export type TeamMember = {
+  id?: string;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  user?: PostUser;
+};
+
+export type Team = {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+  members?: TeamMember[];
+};
+
+export type TeamApplication = {
+  id: string;
+  message: string;
+  createdAt?: string;
+  applicant?: PostUser;
+  team?: Team;
+};
+
+export type TeamInvitation = {
+  id: string;
+  message: string;
+  createdAt?: string;
+  inviter?: PostUser;
+  invitee?: PostUser;
+  team?: Team;
+};
+
+export type SearchUsersResponse = {
+  items: AuthUser[];
   total: number;
   page: number;
   limit: number;
@@ -212,6 +256,14 @@ function clearStoredSession(storage: Storage): void {
   storage.removeItem(AUTH_REMEMBER_ME_KEY);
 }
 
+function getStoredAuthSession(): StoredAuthSession | null {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  return readStoredSession(localStorage) ?? readStoredSession(sessionStorage);
+}
+
 function persistAuthSession(session: StoredAuthSession): void {
   if (!isBrowser()) {
     return;
@@ -250,6 +302,19 @@ function parseApiError(errorBody: unknown, fallback: string): string {
 export type LoginInput = {
   email: string;
   password: string;
+  rememberMe?: boolean;
+};
+
+export type RegisterInput = {
+  name: string;
+  username: string;
+  email: string;
+  institution: string;
+  department: string;
+  phoneNumber: string;
+  role: string;
+  password: string;
+  confirmPassword: string;
   rememberMe?: boolean;
 };
 
@@ -354,6 +419,34 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
   return data ?? {};
 }
 
+export async function register(input: RegisterInput): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = (await response.json().catch(() => null)) as AuthResponse | null;
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Registration failed"));
+  }
+
+  if (data?.accessToken && data.user) {
+    persistAuthSession({
+      accessToken: data.accessToken,
+      user: data.user,
+      rememberMe: Boolean(input.rememberMe),
+      expiresAt: input.rememberMe ? Date.now() + REMEMBER_ME_TTL_MS : undefined,
+    });
+  }
+
+  return data ?? {};
+}
+
 export async function requestPasswordReset(email: string): Promise<{ success: true }> {
   const response = await fetch(`${API_BASE_URL}/auth/password-reset/request`, {
     method: "POST",
@@ -424,14 +517,65 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit) {
     throw new Error("Missing access token");
   }
 
-  return fetch(input, {
-    ...init,
+  const buildHeaders = (accessToken: string) => {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    return headers;
+  };
+
+  const sendRequest = (accessToken: string) =>
+    fetch(input, {
+      ...init,
+      credentials: "include",
+      headers: buildHeaders(accessToken),
+    });
+
+  const response = await sendRequest(token);
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  const refreshed = await refreshAuthSession();
+  if (!refreshed) {
+    clearAuth();
+    return response;
+  }
+
+  const refreshedToken = getAccessToken();
+  if (!refreshedToken) {
+    clearAuth();
+    return response;
+  }
+
+  return sendRequest(refreshedToken);
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  const currentSession = getStoredAuthSession();
+  if (!currentSession) {
+    return false;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
     credentials: "include",
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
   });
+
+  const data = (await response.json().catch(() => null)) as AuthResponse | null;
+
+  if (!response.ok || !data?.accessToken || !data.user) {
+    return false;
+  }
+
+  persistAuthSession({
+    accessToken: data.accessToken,
+    user: data.user,
+    rememberMe: currentSession.rememberMe,
+    expiresAt: currentSession.rememberMe ? Date.now() + REMEMBER_ME_TTL_MS : undefined,
+  });
+
+  return true;
 }
 
 export async function fetchMe(): Promise<AuthUser> {
@@ -623,6 +767,10 @@ export async function likePost(postId: string): Promise<unknown> {
 
   const data = await response.json().catch(() => null);
 
+  if (response.status === 409) {
+    return data ?? { success: true, alreadyLiked: true };
+  }
+
   if (!response.ok) {
     throw new Error(parseApiError(data, "Failed to like post"));
   }
@@ -636,6 +784,10 @@ export async function unlikePost(postId: string): Promise<{ success: true }> {
   });
 
   const data = await response.json().catch(() => null);
+
+  if (response.status === 404) {
+    return { success: true };
+  }
 
   if (!response.ok) {
     throw new Error(parseApiError(data, "Failed to unlike post"));
@@ -651,6 +803,10 @@ export async function savePost(postId: string): Promise<unknown> {
 
   const data = await response.json().catch(() => null);
 
+  if (response.status === 409) {
+    return data ?? { success: true, alreadySaved: true };
+  }
+
   if (!response.ok) {
     throw new Error(parseApiError(data, "Failed to save post"));
   }
@@ -665,11 +821,282 @@ export async function unsavePost(postId: string): Promise<{ success: true }> {
 
   const data = await response.json().catch(() => null);
 
+  if (response.status === 404) {
+    return { success: true };
+  }
+
   if (!response.ok) {
     throw new Error(parseApiError(data, "Failed to unsave post"));
   }
 
   return data as { success: true };
+}
+
+export async function fetchMyLikedPosts(): Promise<PostListResponse> {
+  const response = await authFetch(`${API_BASE_URL}/posts/me/likes`, {
+    method: "GET",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to fetch liked posts"));
+  }
+
+  return (data ?? []) as PostListResponse;
+}
+
+export async function fetchMySavedPosts(): Promise<PostListResponse> {
+  const response = await authFetch(`${API_BASE_URL}/posts/save/me`, {
+    method: "GET",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to fetch saved posts"));
+  }
+
+  return (data ?? []) as PostListResponse;
+}
+
+export type UserProfileResponse = {
+  user: AuthUser;
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  isOwner: boolean;
+};
+
+export async function fetchProfileByUsername(
+  username: string,
+): Promise<UserProfileResponse> {
+  const response = await authFetch(
+    `${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`,
+    {
+      method: "GET",
+    },
+  );
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to load profile"));
+  }
+
+  return data as UserProfileResponse;
+}
+
+export async function followUser(userId: string): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/users/${userId}/follow`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to follow user"));
+  }
+}
+
+export async function unfollowUser(userId: string): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/users/${userId}/follow`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to unfollow user"));
+  }
+}
+
+export async function fetchFollowing(userId: string): Promise<AuthUser[]> {
+  const response = await authFetch(`${API_BASE_URL}/users/${userId}/following`, {
+    method: "GET",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to load following"));
+  }
+
+  return (data ?? []) as AuthUser[];
+}
+
+export type CreateTeamInput = {
+  name: string;
+};
+
+export async function createTeam(input: CreateTeamInput): Promise<Team> {
+  const response = await authFetch(`${API_BASE_URL}/teams`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to create team"));
+  }
+
+  return data as Team;
+}
+
+export async function addTeamMember(
+  teamId: string,
+  userId: string,
+  role: string,
+): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/teams/${teamId}/members`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userId, role }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to add team member"));
+  }
+}
+
+export async function removeTeamMember(
+  teamId: string,
+  userId: string,
+): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/teams/${teamId}/members/${userId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to remove team member"));
+  }
+}
+
+export async function changeTeamMemberRole(
+  teamId: string,
+  userId: string,
+  role: string,
+): Promise<void> {
+  const response = await authFetch(
+    `${API_BASE_URL}/teams/${teamId}/members/${userId}/role`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ role }),
+    },
+  );
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to update member role"));
+  }
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/teams/${teamId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(parseApiError(data, "Failed to delete team"));
+  }
+}
+
+export type CreateInvitationInput = {
+  inviteeId: string;
+  message: string;
+};
+
+export async function inviteToTeam(
+  teamId: string,
+  input: CreateInvitationInput,
+): Promise<TeamInvitation> {
+  const response = await authFetch(`${API_BASE_URL}/invitations/${teamId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to send invitation"));
+  }
+
+  return data as TeamInvitation;
+}
+
+export type CreateApplicationInput = {
+  message: string;
+};
+
+export async function applyToTeam(
+  teamId: string,
+  input: CreateApplicationInput,
+): Promise<TeamApplication> {
+  const response = await authFetch(`${API_BASE_URL}/applications/${teamId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to apply to team"));
+  }
+
+  return data as TeamApplication;
+}
+
+export async function deletePost(postId: string): Promise<{ success: true }> {
+  const response = await authFetch(`${API_BASE_URL}/posts/${postId}`, {
+    method: "DELETE",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to delete post"));
+  }
+
+  return (data ?? { success: true }) as { success: true };
+}
+
+export async function searchUsers(
+  query: string,
+  page = 1,
+  limit = 10,
+): Promise<SearchUsersResponse> {
+  const url = new URL(`${API_BASE_URL}/users/search`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("limit", String(limit));
+
+  const response = await authFetch(url.toString(), {
+    method: "GET",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to search users"));
+  }
+
+  return data as SearchUsersResponse;
 }
 
 export async function fetchPosts(
