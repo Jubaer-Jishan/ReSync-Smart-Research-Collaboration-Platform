@@ -59,7 +59,7 @@ export default function AppNavbar({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-[85vw] items-center justify-between px-4 py-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, x: -12 }}

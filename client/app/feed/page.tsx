@@ -14,6 +14,9 @@ import ForgotPasswordModal from "../../components/ForgotPasswordModal";
 import {
   clearAuth,
   fetchMe,
+  fetchMyLikedPosts,
+  fetchMySavedPosts,
+  fetchFollowing,
   fetchPosts,
   getStoredUser,
   logout,
@@ -33,6 +36,9 @@ export default function FeedPage() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isPasswordResetOpen, setIsPasswordResetOpen] = useState(false);
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [savedPosts, setSavedPosts] = useState<ResearchPost[]>([]);
+  const [followingUserIds, setFollowingUserIds] = useState<Set<string>>(new Set());
   const displayAvatar = user?.profilePictureUrl ?? user?.avatarUrl;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
@@ -83,6 +89,107 @@ export default function FeedPage() {
       .catch(() => {
         // Keep cached user if refresh fails.
       });
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    fetchMyLikedPosts()
+      .then((likedPosts) => {
+        setLikedPostIds(new Set(likedPosts.map((post) => post.id)));
+      })
+      .catch(() => {
+        setLikedPostIds(new Set());
+      });
+
+    fetchMySavedPosts()
+      .then((saved) => {
+        setSavedPosts(saved);
+      })
+      .catch(() => {
+        setSavedPosts([]);
+      });
+
+    fetchFollowing(user.id)
+      .then((following) => {
+        const ids = following
+          .map((followed) => followed.id)
+          .filter((id): id is string => Boolean(id));
+        setFollowingUserIds(new Set(ids));
+      })
+      .catch(() => {
+        setFollowingUserIds(new Set());
+      });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleFollowingUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: "follow" | "unfollow";
+        userId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail?.action || !detail.userId) {
+        return;
+      }
+
+      setFollowingUserIds((current) => {
+        const next = new Set(current);
+        if (detail.action === "follow") {
+          next.add(detail.userId);
+        } else if (detail.action === "unfollow") {
+          next.delete(detail.userId);
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("resync:following-updated", handleFollowingUpdate);
+    return () => {
+      window.removeEventListener("resync:following-updated", handleFollowingUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleSavedUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: "save" | "unsave";
+        post?: ResearchPost;
+        postId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail?.action) {
+        return;
+      }
+
+      setSavedPosts((current) => {
+        if (detail.action === "save" && detail.post?.id) {
+          const exists = current.some((item) => item.id === detail.post?.id);
+          return exists ? current : [detail.post, ...current];
+        }
+
+        if (detail.action === "unsave" && detail.postId) {
+          return current.filter((item) => item.id !== detail.postId);
+        }
+
+        return current;
+      });
+    };
+
+    window.addEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    return () => {
+      window.removeEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -184,12 +291,13 @@ export default function FeedPage() {
           userUsername={user?.username}
         />
 
-        <main className="relative mx-auto flex max-w-[85vw] gap-6 px-4 pb-24 pt-6 md:px-6">
+        <main className="relative mx-auto flex w-full max-w-[1600px] items-start gap-6 px-4 pb-24 pt-24 md:px-6 lg:pl-[17rem] lg:pr-[19.5rem]">
           <AppLeftSidebar
             userName={user?.fullName ?? user?.name ?? user?.email ?? "Researcher"}
             userRole={user?.role ?? "Collaborator"}
             avatarUrl={displayAvatar}
             onChangePassword={() => setIsPasswordResetOpen(true)}
+            savedPosts={savedPosts}
           />
 
           <section className="flex-1 space-y-6">
@@ -215,7 +323,18 @@ export default function FeedPage() {
 
             <div className="space-y-6">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  liked={likedPostIds.has(post.id)}
+                  saved={savedPosts.some((savedPost) => savedPost.id === post.id)}
+                  currentUserId={user?.id}
+                  isFollowing={
+                    post.createdBy?.id
+                      ? followingUserIds.has(post.createdBy.id)
+                      : false
+                  }
+                />
               ))}
             </div>
 

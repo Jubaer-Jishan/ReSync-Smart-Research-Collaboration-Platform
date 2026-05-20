@@ -435,4 +435,37 @@ export class UsersService {
       isOwner: currentUserId === profileUserId,
     };
   }
+
+  async getProfileByUsername(currentUserId: string, username: string) {
+    const profileUser = await this.usersRepository.findOne({
+      where: { username },
+      relations: {
+        studentProfile: true,
+        teacherProfile: true,
+      },
+    });
+
+    if (!profileUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const safeUser = await this.getUserProfileById(profileUser.id);
+    const followersCount = await this.followService
+      .getFollowers(profileUser.id)
+      .then((followers) => followers.length);
+    const followingCount = await this.followService
+      .getFollowing(profileUser.id)
+      .then((following) => following.length);
+    const isFollowing = await this.followService
+      .getFollowers(profileUser.id)
+      .then((followers) => followers.some((f) => f.id === currentUserId));
+
+    return {
+      user: safeUser,
+      followersCount,
+      followingCount,
+      isFollowing,
+      isOwner: currentUserId === profileUser.id,
+    };
+  }
 }

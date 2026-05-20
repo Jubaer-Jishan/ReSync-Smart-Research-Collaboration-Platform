@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Space_Grotesk } from "next/font/google";
 import { HiOutlineDocumentText, HiOutlineOfficeBuilding } from "react-icons/hi";
 import PageTransition from "../../../components/PageTransition";
@@ -13,10 +13,15 @@ import UserAvatar from "../../../components/UserAvatar";
 import {
   clearAuth,
   fetchMe,
+  fetchMyLikedPosts,
+  fetchMySavedPosts,
+  fetchProfileByUsername,
   fetchPosts,
+  followUser,
   getStoredUser,
   logout,
   setStoredUser,
+  unfollowUser,
   uploadProfileAvatar,
   uploadProfileBanner,
   updateProfile,
@@ -45,16 +50,26 @@ function toSafeNumber(value: string): number | undefined {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const params = useParams<{ username: string }>();
+  const profileUsername =
+    typeof params?.username === "string" ? params.username : "";
 
+  const [viewer, setViewer] = useState<AuthUser | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followPending, setFollowPending] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<
     "personal" | "academic" | "social"
   >("personal");
   const [postItems, setPostItems] = useState<ResearchPost[]>([]);
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [savedPosts, setSavedPosts] = useState<ResearchPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -120,16 +135,32 @@ export default function ProfilePage() {
     return rawRole.charAt(0) + rawRole.slice(1).toLowerCase();
   }, [user]);
 
+  const viewerName = useMemo(() => {
+    return (
+      viewer?.fullName ??
+      viewer?.name ??
+      viewer?.username ??
+      viewer?.email ??
+      "Researcher"
+    );
+  }, [viewer]);
+
+  const viewerRole = useMemo(() => {
+    const rawRole = viewer?.role ?? "Collaborator";
+    return rawRole.charAt(0) + rawRole.slice(1).toLowerCase();
+  }, [viewer]);
+
   const displayAvatar =
     avatarPreview ?? user?.profilePictureUrl ?? user?.avatarUrl;
   const displayBanner = bannerPreview ?? user?.bannerImage;
+  const viewerAvatar = viewer?.profilePictureUrl ?? viewer?.avatarUrl;
   const isStudent = (user?.role ?? "").toUpperCase() === "STUDENT";
   const isTeacher = (user?.role ?? "").toUpperCase() === "TEACHER";
   const displayBio =
     profileForm.bio?.trim() || (user as { bio?: string })?.bio?.trim() || "";
   const displayInstitution =
     profileForm.institution?.trim() || user?.institution?.trim() || "";
-  const followersCount = user?.followersCount ?? 0;
+  const profileFollowersCount = followersCount;
 
   const applyUserToForms = (freshUser: AuthUser) => {
     const studentProfile = freshUser.studentProfile;
@@ -223,26 +254,63 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const cached = getStoredUser();
-    setUser(cached);
-
-    if (cached) {
-      setProfileForm((prev) => ({
-        ...prev,
-        institution: cached.institution ?? "",
-        department: cached.department ?? "",
-      }));
-    }
+    setViewer(cached);
 
     fetchMe()
       .then((freshUser) => {
-        setUser(freshUser);
+        setViewer(freshUser);
         setStoredUser(freshUser);
-        applyUserToForms(freshUser);
       })
       .catch(() => {
         // Keep cached user if fetch fails.
       });
   }, []);
+
+  useEffect(() => {
+    if (!profileUsername) {
+      return;
+    }
+
+    setError(null);
+
+    fetchProfileByUsername(profileUsername)
+      .then((profile) => {
+        setUser(profile.user);
+        setFollowersCount(profile.followersCount);
+        setIsFollowing(profile.isFollowing);
+        setIsOwner(profile.isOwner);
+        applyUserToForms(profile.user);
+      })
+      .catch((profileError) => {
+        const message =
+          profileError instanceof Error
+            ? profileError.message
+            : "Unable to load profile";
+        setError(message);
+      });
+  }, [profileUsername]);
+
+  useEffect(() => {
+    if (!viewer?.id) {
+      return;
+    }
+
+    fetchMyLikedPosts()
+      .then((likedPosts) => {
+        setLikedPostIds(new Set(likedPosts.map((post) => post.id)));
+      })
+      .catch(() => {
+        setLikedPostIds(new Set());
+      });
+
+    fetchMySavedPosts()
+      .then((saved) => {
+        setSavedPosts(saved);
+      })
+      .catch(() => {
+        setSavedPosts([]);
+      });
+  }, [viewer?.id]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -271,6 +339,42 @@ export default function ProfilePage() {
         setPostsLoading(false);
       });
   }, [user?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleSavedUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: "save" | "unsave";
+        post?: ResearchPost;
+        postId?: string;
+      }>;
+      const detail = customEvent.detail;
+      if (!detail?.action) {
+        return;
+      }
+
+      setSavedPosts((current) => {
+        if (detail.action === "save" && detail.post?.id) {
+          const exists = current.some((item) => item.id === detail.post?.id);
+          return exists ? current : [detail.post, ...current];
+        }
+
+        if (detail.action === "unsave" && detail.postId) {
+          return current.filter((item) => item.id !== detail.postId);
+        }
+
+        return current;
+      });
+    };
+
+    window.addEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    return () => {
+      window.removeEventListener("resync:saved-posts-updated", handleSavedUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     if (!avatarPreview?.startsWith("blob:")) {
@@ -304,10 +408,24 @@ export default function ProfilePage() {
   };
 
   const refreshProfile = async () => {
-    const fresh = await fetchMe();
-    setUser(fresh);
-    setStoredUser(fresh);
-    applyUserToForms(fresh);
+    const freshViewer = await fetchMe();
+    setViewer(freshViewer);
+    setStoredUser(freshViewer);
+
+    if (profileUsername) {
+      const profile = await fetchProfileByUsername(profileUsername);
+      setUser(profile.user);
+      setFollowersCount(profile.followersCount);
+      setIsFollowing(profile.isFollowing);
+      setIsOwner(profile.isOwner);
+      applyUserToForms(profile.user);
+      return;
+    }
+
+    setUser(freshViewer);
+    setIsOwner(true);
+    setIsFollowing(false);
+    applyUserToForms(freshViewer);
   };
 
   const handleCancelEdit = () => {
@@ -320,6 +438,10 @@ export default function ProfilePage() {
   };
 
   const handleAvatarFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwner) {
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -332,6 +454,7 @@ export default function ProfilePage() {
     setError(null);
     uploadProfileAvatar(file)
       .then((freshUser) => {
+        setViewer(freshUser);
         setUser(freshUser);
         setStoredUser(freshUser);
         applyUserToForms(freshUser);
@@ -351,6 +474,10 @@ export default function ProfilePage() {
   };
 
   const handleBannerFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isOwner) {
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) {
       return;
@@ -363,6 +490,7 @@ export default function ProfilePage() {
     setError(null);
     uploadProfileBanner(file)
       .then((freshUser) => {
+        setViewer(freshUser);
         setUser(freshUser);
         setStoredUser(freshUser);
         applyUserToForms(freshUser);
@@ -382,6 +510,10 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
+    if (!isOwner) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -404,6 +536,10 @@ export default function ProfilePage() {
   };
 
   const handleSaveAll = async () => {
+    if (!isOwner) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -443,6 +579,46 @@ export default function ProfilePage() {
     }
   };
 
+  const handleToggleFollow = async () => {
+    if (!user?.id || isOwner || followPending) {
+      return;
+    }
+
+    setFollowPending(true);
+    setError(null);
+    try {
+      if (isFollowing) {
+        await unfollowUser(user.id);
+        setIsFollowing(false);
+        setFollowersCount((current) => Math.max(0, current - 1));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("resync:following-updated", {
+              detail: { action: "unfollow", userId: user.id },
+            }),
+          );
+        }
+      } else {
+        await followUser(user.id);
+        setIsFollowing(true);
+        setFollowersCount((current) => current + 1);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("resync:following-updated", {
+              detail: { action: "follow", userId: user.id },
+            }),
+          );
+        }
+      }
+    } catch (followError) {
+      const message =
+        followError instanceof Error ? followError.message : "Unable to follow user";
+      setError(message);
+    } finally {
+      setFollowPending(false);
+    }
+  };
+
   if (!hasMounted) {
     return (
       <div
@@ -457,17 +633,18 @@ export default function ProfilePage() {
       <div className={`relative min-h-screen bg-slate-50 ${spaceGrotesk.className}`}>
         <AppNavbar
           onLogout={handleLogout}
-          userName={displayName}
-          userRole={displayRole}
-          avatarUrl={displayAvatar}
-          userUsername={user?.username}
+          userName={viewerName}
+          userRole={viewerRole}
+          avatarUrl={viewerAvatar}
+          userUsername={viewer?.username}
         />
 
-        <main className="relative mx-auto flex max-w-[85vw] gap-6 px-4 pb-24 pt-6 md:px-6">
+        <main className="relative mx-auto flex w-full max-w-[1600px] items-start gap-6 px-4 pb-24 pt-24 md:px-6 lg:pl-[17rem] lg:pr-[19.5rem]">
           <AppLeftSidebar
-            userName={displayName}
-            userRole={displayRole}
-            avatarUrl={displayAvatar}
+            userName={viewerName}
+            userRole={viewerRole}
+            avatarUrl={viewerAvatar}
+            savedPosts={savedPosts}
           />
 
           <section className="flex-1 space-y-6">
@@ -484,15 +661,17 @@ export default function ProfilePage() {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                <label className="absolute right-6 top-6 cursor-pointer rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white opacity-0 backdrop-blur transition group-hover:opacity-100 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100">
-                  Upload banner
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBannerFile}
-                    className="hidden"
-                  />
-                </label>
+                {isOwner ? (
+                  <label className="absolute right-6 top-6 cursor-pointer rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-white opacity-0 backdrop-blur transition group-hover:opacity-100 dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100">
+                    Upload banner
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerFile}
+                      className="hidden"
+                    />
+                  </label>
+                ) : null}
                 <div className="absolute bottom-0 left-6 flex items-end gap-4">
                   <div className="group/avatar relative h-20 w-20 overflow-hidden rounded-[24px] border-4 border-white bg-slate-100 shadow-xl">
                     <UserAvatar
@@ -500,15 +679,17 @@ export default function ProfilePage() {
                       alt={displayName}
                       iconClassName="text-2xl text-slate-500"
                     />
-                    <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-900/50 text-[10px] font-semibold uppercase tracking-widest text-white opacity-0 transition group-hover/avatar:opacity-100">
-                      Change photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarFile}
-                        className="hidden"
-                      />
-                    </label>
+                    {isOwner ? (
+                      <label className="absolute inset-0 flex cursor-pointer items-center justify-center bg-slate-900/50 text-[10px] font-semibold uppercase tracking-widest text-white opacity-0 transition group-hover/avatar:opacity-100">
+                        Change photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarFile}
+                          className="hidden"
+                        />
+                      </label>
+                    ) : null}
                   </div>
                   <div className="space-y-1 pb-4 text-white">
                     <h1 className="text-3xl font-semibold tracking-tight">
@@ -516,8 +697,17 @@ export default function ProfilePage() {
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-slate-200">
                       <span className="rounded-full border border-white/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em]">
-                        {followersCount} Followers
+                        {profileFollowersCount} Followers
                       </span>
+                      {!isOwner ? (
+                        <button
+                          onClick={handleToggleFollow}
+                          disabled={followPending}
+                          className="rounded-full border border-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isFollowing ? "Following" : "Follow"}
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -553,14 +743,16 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-slate-900">
-                  Your Posts
+                  {isOwner ? "Your Posts" : "Posts"}
                 </h2>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-600"
-                >
-                  Edit Profile
-                </button>
+                {isOwner ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-slate-600"
+                  >
+                    Edit Profile
+                  </button>
+                ) : null}
               </div>
 
               {postsLoading && (
@@ -583,7 +775,14 @@ export default function ProfilePage() {
 
               <div className="space-y-5">
                 {postItems.map((post) => (
-                  <PostCard key={post.id} post={post} />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    liked={likedPostIds.has(post.id)}
+                    saved={savedPosts.some((savedPost) => savedPost.id === post.id)}
+                    currentUserId={viewer?.id}
+                    isFollowing={!isOwner && isFollowing}
+                  />
                 ))}
               </div>
             </div>
@@ -592,7 +791,7 @@ export default function ProfilePage() {
           <AppRightSidebar />
         </main>
 
-        {isEditing && (
+        {isOwner && isEditing && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
             <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-[32px] bg-white p-6 shadow-2xl">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
