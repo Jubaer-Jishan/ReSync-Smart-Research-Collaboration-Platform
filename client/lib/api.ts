@@ -12,6 +12,7 @@ export type PostMedia = {
 
 export type PostUser = {
   id?: string;
+  username?: string;
   fullName?: string;
   name?: string;
   email?: string;
@@ -128,6 +129,13 @@ export type TeamInvitation = {
   inviter?: PostUser;
   invitee?: PostUser;
   team?: Team;
+};
+
+export type SearchUsersResponse = {
+  items: AuthUser[];
+  total: number;
+  page: number;
+  limit: number;
 };
 
 export const ACCESS_TOKEN_KEY = "resync_access_token";
@@ -248,6 +256,14 @@ function clearStoredSession(storage: Storage): void {
   storage.removeItem(AUTH_REMEMBER_ME_KEY);
 }
 
+function getStoredAuthSession(): StoredAuthSession | null {
+  if (!isBrowser()) {
+    return null;
+  }
+
+  return readStoredSession(localStorage) ?? readStoredSession(sessionStorage);
+}
+
 function persistAuthSession(session: StoredAuthSession): void {
   if (!isBrowser()) {
     return;
@@ -286,6 +302,19 @@ function parseApiError(errorBody: unknown, fallback: string): string {
 export type LoginInput = {
   email: string;
   password: string;
+  rememberMe?: boolean;
+};
+
+export type RegisterInput = {
+  name: string;
+  username: string;
+  email: string;
+  institution: string;
+  department: string;
+  phoneNumber: string;
+  role: string;
+  password: string;
+  confirmPassword: string;
   rememberMe?: boolean;
 };
 
@@ -390,6 +419,34 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
   return data ?? {};
 }
 
+export async function register(input: RegisterInput): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  const data = (await response.json().catch(() => null)) as AuthResponse | null;
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Registration failed"));
+  }
+
+  if (data?.accessToken && data.user) {
+    persistAuthSession({
+      accessToken: data.accessToken,
+      user: data.user,
+      rememberMe: Boolean(input.rememberMe),
+      expiresAt: input.rememberMe ? Date.now() + REMEMBER_ME_TTL_MS : undefined,
+    });
+  }
+
+  return data ?? {};
+}
+
 export async function requestPasswordReset(email: string): Promise<{ success: true }> {
   const response = await fetch(`${API_BASE_URL}/auth/password-reset/request`, {
     method: "POST",
@@ -460,14 +517,65 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit) {
     throw new Error("Missing access token");
   }
 
-  return fetch(input, {
-    ...init,
+  const buildHeaders = (accessToken: string) => {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    return headers;
+  };
+
+  const sendRequest = (accessToken: string) =>
+    fetch(input, {
+      ...init,
+      credentials: "include",
+      headers: buildHeaders(accessToken),
+    });
+
+  const response = await sendRequest(token);
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  const refreshed = await refreshAuthSession();
+  if (!refreshed) {
+    clearAuth();
+    return response;
+  }
+
+  const refreshedToken = getAccessToken();
+  if (!refreshedToken) {
+    clearAuth();
+    return response;
+  }
+
+  return sendRequest(refreshedToken);
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  const currentSession = getStoredAuthSession();
+  if (!currentSession) {
+    return false;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: "POST",
     credentials: "include",
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
   });
+
+  const data = (await response.json().catch(() => null)) as AuthResponse | null;
+
+  if (!response.ok || !data?.accessToken || !data.user) {
+    return false;
+  }
+
+  persistAuthSession({
+    accessToken: data.accessToken,
+    user: data.user,
+    rememberMe: currentSession.rememberMe,
+    expiresAt: currentSession.rememberMe ? Date.now() + REMEMBER_ME_TTL_MS : undefined,
+  });
+
+  return true;
 }
 
 export async function fetchMe(): Promise<AuthUser> {
@@ -817,7 +925,6 @@ export async function fetchFollowing(userId: string): Promise<AuthUser[]> {
 
 export type CreateTeamInput = {
   name: string;
-  ownerId: string;
 };
 
 export async function createTeam(input: CreateTeamInput): Promise<Team> {
@@ -905,7 +1012,6 @@ export async function deleteTeam(teamId: string): Promise<void> {
 }
 
 export type CreateInvitationInput = {
-  inviterId: string;
   inviteeId: string;
   message: string;
 };
@@ -932,7 +1038,6 @@ export async function inviteToTeam(
 }
 
 export type CreateApplicationInput = {
-  applicantId: string;
   message: string;
 };
 
@@ -955,6 +1060,43 @@ export async function applyToTeam(
   }
 
   return data as TeamApplication;
+}
+
+export async function deletePost(postId: string): Promise<{ success: true }> {
+  const response = await authFetch(`${API_BASE_URL}/posts/${postId}`, {
+    method: "DELETE",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to delete post"));
+  }
+
+  return (data ?? { success: true }) as { success: true };
+}
+
+export async function searchUsers(
+  query: string,
+  page = 1,
+  limit = 10,
+): Promise<SearchUsersResponse> {
+  const url = new URL(`${API_BASE_URL}/users/search`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("limit", String(limit));
+
+  const response = await authFetch(url.toString(), {
+    method: "GET",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to search users"));
+  }
+
+  return data as SearchUsersResponse;
 }
 
 export async function fetchPosts(
