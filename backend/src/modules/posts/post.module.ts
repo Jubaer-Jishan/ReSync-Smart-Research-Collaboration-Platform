@@ -12,11 +12,16 @@ import { CommentService } from './comment.service';
 import { ShareService } from './share.service';
 import { Comment } from './entities/comment.entity';
 import { Like } from './entities/like.entity';
+import { SavedPost } from './entities/saved-post.entity';
 import { Share } from './entities/share.entity';
+import { ResearchPostsModule } from '../research-posts/research-posts.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Like, Comment, Share, ResearchPost, User]),
+    TypeOrmModule.forFeature([Like, SavedPost, Comment, Share, ResearchPost, User]),
+    ResearchPostsModule,
+    UsersModule,
   ],
   controllers: [
     PostSaveController,

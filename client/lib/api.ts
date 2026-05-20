@@ -612,6 +612,66 @@ export async function logout(): Promise<void> {
   }
 }
 
+export async function likePost(postId: string): Promise<unknown> {
+  const response = await authFetch(`${API_BASE_URL}/posts/${postId}/likes`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ postId }),
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to like post"));
+  }
+
+  return data;
+}
+
+export async function unlikePost(postId: string): Promise<{ success: true }> {
+  const response = await authFetch(`${API_BASE_URL}/posts/${postId}/likes`, {
+    method: "DELETE",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to unlike post"));
+  }
+
+  return data as { success: true };
+}
+
+export async function savePost(postId: string): Promise<unknown> {
+  const response = await authFetch(`${API_BASE_URL}/posts/save/${postId}`, {
+    method: "POST",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to save post"));
+  }
+
+  return data;
+}
+
+export async function unsavePost(postId: string): Promise<{ success: true }> {
+  const response = await authFetch(`${API_BASE_URL}/posts/save/${postId}`, {
+    method: "DELETE",
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(parseApiError(data, "Failed to unsave post"));
+  }
+
+  return data as { success: true };
+}
+
 export async function fetchPosts(
   page = 1,
   limit = 10,

@@ -1,6 +1,6 @@
 # Users API Examples (JSON)
 
-Base URL: http://localhost:3000/api
+Base URL: http://localhost:3001/api
 
 Use this header for protected endpoints:
 

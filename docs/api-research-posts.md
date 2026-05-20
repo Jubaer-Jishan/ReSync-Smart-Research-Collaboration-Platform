@@ -1,6 +1,6 @@
 # Research Posts API Examples (JSON)
 
-Base URL: http://localhost:3000/api
+Base URL: http://localhost:3001/api
 
 Use this header for protected endpoints:
 
@@ -103,6 +103,22 @@ No JSON body.
 Requires Authorization header.
 
 No JSON body.
+
+## POST /posts/save/:id
+
+Requires Authorization header.
+
+No JSON body.
+
+Saves the post for the current authenticated user.
+
+## DELETE /posts/save/:id
+
+Requires Authorization header.
+
+No JSON body.
+
+Removes the saved post for the current authenticated user.
 
 ## POST /posts/:id/comments
 

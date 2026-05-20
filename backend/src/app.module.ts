@@ -10,6 +10,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { ResearchPostsModule } from './modules/research-posts/research-posts.module';
 import { PostModule } from './modules/posts/post.module';
+import { TeamModule } from './modules/teams/team.module';
 import { StorageModule } from './storage/storage.module';
 
 
@@ -29,6 +30,7 @@ import { StorageModule } from './storage/storage.module';
     ApplicationsModule,
     ResearchPostsModule,
     PostModule,
+    TeamModule,
     StorageModule,
   ],
 })

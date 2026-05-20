@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
@@ -102,21 +102,7 @@ export class ResearchPostsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
-    const qb = this.postsRepository
-      .createQueryBuilder('post')
-      .leftJoinAndSelect('post.createdBy', 'creator')
-      .leftJoinAndSelect(
-        'post.media',
-        'media',
-        `media.id IN ${this.postsRepository
-          .createQueryBuilder('mediaSub')
-          .subQuery()
-          .select('MIN(mediaSub.id)')
-          .from(PostMedia, 'mediaSub')
-          .where('mediaSub.postId = post.id')
-          .getQuery()}`,
-      )
-      .distinct(true);
+    const qb = this.postsRepository.createQueryBuilder('post');
 
     if (query.researchDomain) {
       qb.andWhere('post.researchDomain = :researchDomain', {
@@ -181,9 +167,28 @@ export class ResearchPostsService {
     const sortOrder = this.resolveSortOrder(query.sortOrder);
     qb.orderBy(`post.${sortBy}`, sortOrder);
 
-    qb.skip((page - 1) * limit).take(limit);
+    const total = await qb.getCount();
 
-    const [items, total] = await qb.getManyAndCount();
+    const posts = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    if (posts.length === 0) {
+      return { items: [], total, page, limit };
+    }
+
+    const orderedIds = posts.map((post) => post.id);
+    const loadedPosts = await this.postsRepository.find({
+      where: { id: In(orderedIds) },
+      relations: ['createdBy', 'media'],
+    });
+
+    const loadedPostMap = new Map(loadedPosts.map((post) => [post.id, post]));
+    const items = orderedIds
+      .map((id) => loadedPostMap.get(id))
+      .filter((post): post is ResearchPost => Boolean(post));
+
     return { items, total, page, limit };
   }
 
