@@ -8,6 +8,7 @@ import { ResearchPost } from './entities/research-post.entity';
 import { ResearchPostMediaService } from './research-post-media.service';
 import { ResearchPostsController } from './research-posts.controller';
 import { ResearchPostsService } from './research-posts.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ResearchPostsService } from './research-posts.service';
       PostResearchInterest,
     ]),
     StorageModule,
+    UsersModule,
   ],
   controllers: [ResearchPostsController],
   providers: [ResearchPostMediaService, ResearchPostsService],
